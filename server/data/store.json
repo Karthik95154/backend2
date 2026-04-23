@@ -1,0 +1,331 @@
+{
+  "businessProfile": null,
+  "slots": [
+    {
+      "id": "slot-1",
+      "number": "A1",
+      "status": "free"
+    },
+    {
+      "id": "slot-2",
+      "number": "A2",
+      "status": "occupied",
+      "vehicleNumber": "KA-11-1037",
+      "timeElapsed": "2h 17m"
+    },
+    {
+      "id": "slot-3",
+      "number": "A3",
+      "status": "free"
+    },
+    {
+      "id": "slot-4",
+      "number": "A4",
+      "status": "reserved",
+      "bookedBy": "Upcoming booking #1103"
+    },
+    {
+      "id": "slot-5",
+      "number": "A5",
+      "status": "free"
+    },
+    {
+      "id": "slot-6",
+      "number": "A6",
+      "status": "occupied",
+      "vehicleNumber": "KA-15-1185",
+      "timeElapsed": "3h 45m"
+    },
+    {
+      "id": "slot-7",
+      "number": "A7",
+      "status": "overstay",
+      "vehicleNumber": "KA-16-1222",
+      "timeElapsed": "4h 38m"
+    },
+    {
+      "id": "slot-8",
+      "number": "A8",
+      "status": "free"
+    },
+    {
+      "id": "slot-9",
+      "number": "A9",
+      "status": "occupied",
+      "vehicleNumber": "KA-18-1296",
+      "timeElapsed": "3h 16m"
+    },
+    {
+      "id": "slot-10",
+      "number": "A10",
+      "status": "free"
+    },
+    {
+      "id": "slot-11",
+      "number": "B1",
+      "status": "free"
+    },
+    {
+      "id": "slot-12",
+      "number": "B2",
+      "status": "occupied",
+      "vehicleNumber": "KA-21-1407",
+      "timeElapsed": "3h 37m"
+    },
+    {
+      "id": "slot-13",
+      "number": "B3",
+      "status": "free"
+    },
+    {
+      "id": "slot-14",
+      "number": "B4",
+      "status": "reserved",
+      "bookedBy": "Upcoming booking #1113"
+    },
+    {
+      "id": "slot-15",
+      "number": "B5",
+      "status": "free"
+    },
+    {
+      "id": "slot-16",
+      "number": "B6",
+      "status": "occupied",
+      "vehicleNumber": "KA-25-1555",
+      "timeElapsed": "1h 15m"
+    },
+    {
+      "id": "slot-17",
+      "number": "B7",
+      "status": "overstay",
+      "vehicleNumber": "KA-26-1592",
+      "timeElapsed": "5h 38m"
+    },
+    {
+      "id": "slot-18",
+      "number": "B8",
+      "status": "free"
+    },
+    {
+      "id": "slot-19",
+      "number": "B9",
+      "status": "occupied",
+      "vehicleNumber": "KA-28-1666",
+      "timeElapsed": "1h 36m"
+    },
+    {
+      "id": "slot-20",
+      "number": "B10",
+      "status": "free"
+    },
+    {
+      "id": "slot-21",
+      "number": "C1",
+      "status": "free"
+    },
+    {
+      "id": "slot-22",
+      "number": "C2",
+      "status": "occupied",
+      "vehicleNumber": "KA-31-1777",
+      "timeElapsed": "1h 57m"
+    },
+    {
+      "id": "slot-23",
+      "number": "C3",
+      "status": "free"
+    },
+    {
+      "id": "slot-24",
+      "number": "C4",
+      "status": "reserved",
+      "bookedBy": "Upcoming booking #1123"
+    },
+    {
+      "id": "slot-25",
+      "number": "C5",
+      "status": "free"
+    },
+    {
+      "id": "slot-26",
+      "number": "C6",
+      "status": "occupied",
+      "vehicleNumber": "KA-35-1925",
+      "timeElapsed": "2h 35m"
+    },
+    {
+      "id": "slot-27",
+      "number": "C7",
+      "status": "overstay",
+      "vehicleNumber": "KA-36-1962",
+      "timeElapsed": "6h 38m"
+    },
+    {
+      "id": "slot-28",
+      "number": "C8",
+      "status": "free"
+    },
+    {
+      "id": "slot-29",
+      "number": "C9",
+      "status": "occupied",
+      "vehicleNumber": "KA-38-2036",
+      "timeElapsed": "2h 56m"
+    },
+    {
+      "id": "slot-30",
+      "number": "C10",
+      "status": "free"
+    },
+    {
+      "id": "slot-31",
+      "number": "D1",
+      "status": "free"
+    },
+    {
+      "id": "slot-32",
+      "number": "D2",
+      "status": "occupied",
+      "vehicleNumber": "KA-41-2147",
+      "timeElapsed": "2h 27m"
+    },
+    {
+      "id": "slot-33",
+      "number": "D3",
+      "status": "free"
+    },
+    {
+      "id": "slot-34",
+      "number": "D4",
+      "status": "reserved",
+      "bookedBy": "Upcoming booking #1133"
+    },
+    {
+      "id": "slot-35",
+      "number": "D5",
+      "status": "free"
+    },
+    {
+      "id": "slot-36",
+      "number": "D6",
+      "status": "occupied",
+      "vehicleNumber": "KA-45-2295",
+      "timeElapsed": "3h 55m"
+    },
+    {
+      "id": "slot-37",
+      "number": "D7",
+      "status": "overstay",
+      "vehicleNumber": "KA-46-2332",
+      "timeElapsed": "4h 38m"
+    },
+    {
+      "id": "slot-38",
+      "number": "D8",
+      "status": "free"
+    },
+    {
+      "id": "slot-39",
+      "number": "D9",
+      "status": "occupied",
+      "vehicleNumber": "KA-48-2406",
+      "timeElapsed": "3h 26m"
+    },
+    {
+      "id": "slot-40",
+      "number": "D10",
+      "status": "free"
+    }
+  ],
+  "parkingZones": [
+    {
+      "id": "zone-1",
+      "name": "Ground Floor",
+      "type": "Standard",
+      "capacity": 10,
+      "rate": 40
+    },
+    {
+      "id": "zone-2",
+      "name": "Premium Wing",
+      "type": "Premium",
+      "capacity": 10,
+      "rate": 60
+    },
+    {
+      "id": "zone-3",
+      "name": "Two-Wheeler Bay",
+      "type": "Motorcycle",
+      "capacity": 10,
+      "rate": 40
+    },
+    {
+      "id": "zone-4",
+      "name": "Accessible Parking",
+      "type": "Accessible",
+      "capacity": 10,
+      "rate": 0
+    }
+  ],
+  "bookings": [
+    {
+      "id": "B-1001",
+      "user": "John Doe",
+      "vehicle": "XYZ-1234",
+      "time": "2026-04-17 10:00",
+      "status": "active"
+    },
+    {
+      "id": "B-1002",
+      "user": "Jane Smith",
+      "vehicle": "ABC-9876",
+      "time": "2026-04-17 11:30",
+      "status": "booked"
+    },
+    {
+      "id": "B-1003",
+      "user": "Bob Johnson",
+      "vehicle": "LMN-4567",
+      "time": "2026-04-17 09:15",
+      "status": "assigned"
+    },
+    {
+      "id": "B-1004",
+      "user": "Alice Williams",
+      "vehicle": "PQR-3210",
+      "time": "2026-04-17 08:00",
+      "status": "overstay"
+    }
+  ],
+  "payments": [
+    {
+      "id": "PAY-001",
+      "bookingId": "B-1001",
+      "amount": 15,
+      "status": "Paid",
+      "date": "2026-04-17"
+    },
+    {
+      "id": "PAY-002",
+      "bookingId": "B-1002",
+      "amount": 10,
+      "status": "Pending",
+      "date": "2026-04-17"
+    },
+    {
+      "id": "PAY-003",
+      "bookingId": "B-1003",
+      "amount": 20,
+      "status": "Paid",
+      "date": "2026-04-16"
+    },
+    {
+      "id": "PAY-004",
+      "bookingId": "B-1004",
+      "amount": 25,
+      "status": "Failed",
+      "date": "2026-04-16"
+    }
+  ]
+}

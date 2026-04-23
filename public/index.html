@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartPark Dashboard</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- Background Decoration -->
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+
+    <div class="container">
+        
+        <!-- Authentication Section -->
+        <div id="auth-section" class="glass-card auth-panel">
+            <div class="auth-header">
+                <h1>SmartPark</h1>
+                <p id="auth-subtitle">Login to manage your parking</p>
+            </div>
+
+            <!-- Login Form -->
+            <form id="login-form" class="auth-form">
+                <div class="input-group">
+                    <label>Email</label>
+                    <input type="email" id="login-email" required>
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="login-password" required>
+                </div>
+                <button type="submit" class="btn-primary" id="loginBtn">Login</button>
+                <div id="login-msg" class="status-msg hidden"></div>
+                
+                <p class="toggle-auth">Don't have an account? <span onclick="toggleAuthMode()">Sign up</span></p>
+            </form>
+
+            <!-- Signup Form -->
+            <form id="signup-form" class="auth-form hidden">
+                <div class="input-group">
+                    <label>Full Name</label>
+                    <input type="text" id="signup-name" required>
+                </div>
+                <div class="input-group">
+                    <label>Email</label>
+                    <input type="email" id="signup-email" required>
+                </div>
+                <div class="input-group">
+                    <label>Phone Number</label>
+                    <input type="tel" id="signup-phone" required pattern="[0-9]{10}">
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="signup-password" required minlength="6">
+                </div>
+                <button type="submit" class="btn-primary" id="signupBtn">Sign Up</button>
+                <div id="signup-msg" class="status-msg hidden"></div>
+                
+                <p class="toggle-auth">Already have an account? <span onclick="toggleAuthMode()">Login</span></p>
+            </form>
+        </div>
+
+        <!-- Main Dashboard Section (Hidden by default) -->
+        <div id="dashboard-section" class="hidden">
+            <header>
+                <h1>SmartPark</h1>
+                <p>Welcome, <span id="display-user-name">User</span>! | <a href="#" onclick="logout(); return false;" style="color:var(--text-muted)">Logout</a></p>
+            </header>
+
+            <div class="dashboard-grid">
+                <!-- Parking Lots List -->
+                <section class="glass-card locations-panel">
+                    <h2>Available Locations</h2>
+                    <div id="parking-list" class="parking-list">
+                        <div class="loading-spinner"></div>
+                    </div>
+                </section>
+
+                <!-- Booking Section -->
+                <section class="glass-card booking-panel">
+                    <h2>Quick Book</h2>
+                    <form id="booking-form" class="booking-form">
+                        <div class="input-group">
+                            <label for="parkingSelect">Select Location</label>
+                            <select id="parkingSelect" required>
+                                <option value="" disabled selected>Loading locations...</option>
+                            </select>
+                        </div>
+
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label for="vehicleNumber">Vehicle Number</label>
+                                <input type="text" id="vehicleNumber" placeholder="e.g. MH01AB1234" required pattern="^[A-Za-z]{2}[0-9]{2}[A-Za-z]{2}[0-9]{4}$" title="Must match format XX00XX0000">
+                            </div>
+                            <div class="input-group">
+                                <label for="hours">Duration (Hours)</label>
+                                <input type="number" id="hours" min="1" max="24" value="1" required>
+                            </div>
+                        </div>
+
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label for="startTime">Arrival Time</label>
+                                <input type="datetime-local" id="startTime" required>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn-primary" id="bookBtn">
+                            <span class="btn-text">Confirm Booking</span>
+                        </button>
+                        
+                        <div id="booking-status" class="status-msg hidden"></div>
+                    </form>
+                </section>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
