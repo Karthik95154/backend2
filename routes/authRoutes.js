@@ -72,37 +72,125 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// User Signup
+// Unified Signup (Handles both User and PMS)
 router.post("/signup", async (req, res) => {
   try {
-    let { name, email, phone, password } = req.body;
-    email = normalizeEmail(email);
-
-    if (!name || !email || !phone || !password) {
-      return res.status(400).json({ success: false, message: "All fields are required" });
-    }
-
-    const existing = await User.findOne({ where: { email } });
-    if (existing) {
-      return res.status(400).json({ success: false, message: "Email already exists" });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await User.create({
+    let {
       name,
+      businessName,
+      legalBusinessName,
+      ownerName,
+      contactPerson,
       email,
+      contactEmail,
       phone,
-      password: hashedPassword
-    });
+      contactPhone,
+      password,
+      adminPassword,
+      location,
+      latitude,
+      longitude,
+      lat,
+      lng,
+      address,
+      fullAddress,
+      totalSlots,
+      pricePerHour,
+      openingTime,
+      closingTime
+    } = req.body;
 
-    return res.status(201).json({
-      success: true,
-      message: "User signup successful",
-      ...toSafeUser(user)
-    });
+    // Detect if this is a PMS/Business registration
+    const isBusiness = !!(legalBusinessName || businessName || contactPerson || totalSlots);
+
+    if (isBusiness) {
+      // --- PMS REGISTRATION LOGIC ---
+      businessName = businessName || legalBusinessName;
+      ownerName = ownerName || contactPerson;
+      email = normalizeEmail(email || contactEmail);
+      phone = phone || contactPhone;
+      password = password || adminPassword;
+      address = address || fullAddress;
+
+      const resolvedLatitude = location?.lat ?? latitude ?? lat;
+      const resolvedLongitude = location?.lng ?? longitude ?? lng;
+
+      const missingFields = [];
+      if (!businessName) missingFields.push("businessName (legalBusinessName)");
+      if (!ownerName) missingFields.push("ownerName (contactPerson)");
+      if (!email) missingFields.push("email (contactEmail)");
+      if (!phone) missingFields.push("phone (contactPhone)");
+      if (!password) missingFields.push("password (adminPassword)");
+      if (resolvedLatitude === undefined || resolvedLatitude === null) missingFields.push("latitude (map location)");
+      if (resolvedLongitude === undefined || resolvedLongitude === null) missingFields.push("longitude (map location)");
+      if (!address) missingFields.push("address (fullAddress)");
+      if (totalSlots === undefined || totalSlots === null) missingFields.push("totalSlots");
+      if (pricePerHour === undefined || pricePerHour === null) missingFields.push("pricePerHour");
+      if (!openingTime) missingFields.push("openingTime");
+      if (!closingTime) missingFields.push("closingTime");
+
+      if (missingFields.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: `Missing required fields: ${missingFields.join(", ")}`
+        });
+      }
+
+      const existingPms = await ParkingBusiness.findOne({ where: { email } });
+      if (existingPms) {
+        return res.status(400).json({ success: false, message: "Email already exists" });
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const pms = await ParkingBusiness.create({
+        businessName: String(businessName).trim(),
+        ownerName: String(ownerName).trim(),
+        email,
+        phone: String(phone).trim(),
+        password: hashedPassword,
+        latitude: Number(resolvedLatitude),
+        longitude: Number(resolvedLongitude),
+        address: String(address).trim(),
+        totalSlots: Number(totalSlots),
+        pricePerHour: Number(pricePerHour),
+        openingTime: String(openingTime).trim(),
+        closingTime: String(closingTime).trim()
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: "PMS registration successful",
+        ...toSafePms(pms)
+      });
+    } else {
+      // --- REGULAR USER SIGNUP LOGIC ---
+      email = normalizeEmail(email);
+      if (!name || !email || !phone || !password) {
+        return res.status(400).json({ success: false, message: "Name, email, phone, and password are required" });
+      }
+
+      const existingUser = await User.findOne({ where: { email } });
+      if (existingUser) {
+        return res.status(400).json({ success: false, message: "Email already exists" });
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const user = await User.create({
+        name,
+        email,
+        phone,
+        password: hashedPassword
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: "User signup successful",
+        ...toSafeUser(user)
+      });
+    }
   } catch (err) {
     console.error("SIGNUP ERROR:", err);
-    return res.status(500).json({ success: false, message: "Internal server error" });
+    return res.status(500).json({ success: false, message: "Internal server error", error: err.message });
   }
 });
 
