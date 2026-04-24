@@ -26,6 +26,14 @@ const toSafePms = (pms) => ({
   contactEmail: pms.email,
   phone: pms.phone,
   contactPhone: pms.phone,
+  latitude: pms.latitude,
+  longitude: pms.longitude,
+  address: pms.address,
+  fullAddress: pms.address,
+  totalSlots: pms.totalSlots,
+  pricePerHour: pms.pricePerHour,
+  openingTime: pms.openingTime,
+  closingTime: pms.closingTime,
   role: "admin"
 });
 

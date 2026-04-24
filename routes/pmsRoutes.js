@@ -194,4 +194,17 @@ router.post("/login", async (req, res) => {
   }
 });
 
+router.get("/business-profile", async (req, res) => {
+  try {
+    const pms = await ParkingBusiness.findOne();
+    if (!pms) {
+      return res.status(404).json({ success: false, message: "No business profile found" });
+    }
+    return res.status(200).json(toSafePms(pms));
+  } catch (err) {
+    console.error("GET PROFILE ERROR:", err);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
 module.exports = router;
