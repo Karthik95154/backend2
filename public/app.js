@@ -47,7 +47,7 @@ async function handleLogin(e) {
         const email = document.getElementById('login-email').value;
         const password = document.getElementById('login-password').value;
 
-        const res = await fetch('/login', {
+        const res = await fetch('/api/user/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
@@ -81,7 +81,7 @@ async function handleSignup(e) {
         const phone = document.getElementById('signup-phone').value;
         const password = document.getElementById('signup-password').value;
 
-        const res = await fetch('/signup', {
+        const res = await fetch('/api/user/signup', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, email, phone, password })
@@ -138,17 +138,18 @@ async function fetchParkingSlots() {
     try {
         const response = await fetch('/parking');
         const data = await response.json();
-        allParkingData = data;
+        console.log("Parking API data:", data);
+        allParkingData = Array.isArray(data) ? data : [];
         
         listContainer.innerHTML = '';
         selectPraking.innerHTML = '<option value="" disabled selected>Select Location</option>';
 
-        if (data.length === 0) {
+        if (allParkingData.length === 0) {
             listContainer.innerHTML = '<p class="text-muted">No parking locations found.</p>';
             return;
         }
 
-        data.forEach(parking => {
+        allParkingData.forEach(parking => {
             const isAvailable = parking.availableSlots > 0 && parking.isOpen;
             
             // Add to List
@@ -158,14 +159,14 @@ async function fetchParkingSlots() {
             
             pc.innerHTML = `
                 <div class="parking-header">
-                    <span class="parking-title">${parking.name}</span>
+                    <span class="parking-title">${parking.parking_name}</span>
                     <span class="badge ${isAvailable ? '' : 'closed'}">
                         ${parking.isOpen ? (parking.availableSlots > 0 ? parking.availableSlots + ' Slots' : 'Full') : 'Closed'}
                     </span>
                 </div>
                 <div class="parking-details">
-                    <span class="detail-item">📍 ${parking.address || 'Location Details'}</span>
-                    <span class="detail-item price">₹${parking.pricePerHour}/hr</span>
+                    <span class="detail-item">📍 ${parking.full_address || 'Location Details'}</span>
+                    <span class="detail-item price">₹${parking.price_per_hour}/hr</span>
                     <span class="detail-item">🕒 ${parking.openingTime} - ${parking.closingTime}</span>
                 </div>
             `;
@@ -175,7 +176,7 @@ async function fetchParkingSlots() {
             if(isAvailable) {
                 const opt = document.createElement('option');
                 opt.value = parking.id;
-                opt.textContent = `${parking.name} (₹${parking.pricePerHour}/hr)`;
+                opt.textContent = `${parking.parking_name} (₹${parking.price_per_hour}/hr)`;
                 selectPraking.appendChild(opt);
             }
         });
@@ -220,9 +221,9 @@ async function handleBookingSubmit(e) {
         phone: currentUser.phone || "0000000000",
         vehicleNumber: vehicleNumber,
         parkingId: parkingId,
-        parkingName: selectedParking ? selectedParking.name : "Unknown",
+        parkingName: selectedParking ? selectedParking.parking_name : "Unknown",
         hours: parseInt(hours),
-        pricePerHour: selectedParking ? selectedParking.pricePerHour : 0,
+        pricePerHour: selectedParking ? selectedParking.price_per_hour : 0,
         startTime: startTime.toISOString(),
         endTime: endTime.toISOString()
     };
