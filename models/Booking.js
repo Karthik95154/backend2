@@ -13,18 +13,6 @@ module.exports = (sequelize) =>
         type: DataTypes.UUID,
         allowNull: false
       },
-      userName: {
-        type: DataTypes.STRING,
-        allowNull: false
-      },
-      userEmail: {
-        type: DataTypes.STRING,
-        allowNull: false
-      },
-      phone: {
-        type: DataTypes.STRING,
-        allowNull: false
-      },
       vehicleNumber: {
         type: DataTypes.STRING,
         allowNull: false
@@ -33,16 +21,8 @@ module.exports = (sequelize) =>
         type: DataTypes.UUID,
         allowNull: false
       },
-      parkingName: {
-        type: DataTypes.STRING,
-        allowNull: false
-      },
-      hours: {
+      slotNumber: {
         type: DataTypes.INTEGER,
-        allowNull: false
-      },
-      pricePerHour: {
-        type: DataTypes.FLOAT,
         allowNull: false
       },
       totalAmount: {
@@ -57,10 +37,23 @@ module.exports = (sequelize) =>
         type: DataTypes.DATE,
         allowNull: false
       },
-      status: {
-        type: DataTypes.STRING,
+      paymentStatus: {
+        type: DataTypes.ENUM("Pending", "Paid", "Failed"),
         allowNull: false,
-        defaultValue: "CONFIRMED"
+        defaultValue: "Pending"
+      },
+      bookingStatus: {
+        type: DataTypes.ENUM("Confirmed", "Checked-In", "Completed", "Cancelled"),
+        allowNull: false,
+        defaultValue: "Confirmed"
+      },
+      razorpay_order_id: {
+        type: DataTypes.STRING,
+        allowNull: true
+      },
+      razorpay_payment_id: {
+        type: DataTypes.STRING,
+        allowNull: true
       }
     },
     {
