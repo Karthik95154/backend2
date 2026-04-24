@@ -13,12 +13,18 @@ const isValidNumber = (value) => Number.isFinite(Number(value));
 const toSafePms = (pms) => ({
   id: pms.id,
   businessName: pms.businessName,
+  legalBusinessName: pms.businessName,
+  parkingName: pms.parkingName || pms.businessName,
   ownerName: pms.ownerName,
+  contactPerson: pms.ownerName,
   email: pms.email,
+  contactEmail: pms.email,
   phone: pms.phone,
+  contactPhone: pms.phone,
   latitude: pms.latitude,
   longitude: pms.longitude,
   address: pms.address,
+  fullAddress: pms.address,
   totalSlots: pms.totalSlots,
   pricePerHour: pms.pricePerHour,
   openingTime: pms.openingTime,
@@ -31,45 +37,56 @@ router.post("/signup", async (req, res) => {
   try {
     let {
       businessName,
+      legalBusinessName,
       ownerName,
+      contactPerson,
       email,
+      contactEmail,
       phone,
+      contactPhone,
       password,
+      adminPassword,
       location,
       latitude,
       longitude,
       lat,
       lng,
       address,
+      fullAddress,
       totalSlots,
       pricePerHour,
       openingTime,
       closingTime
     } = req.body;
 
-    email = normalizeEmail(email);
+    businessName = businessName || legalBusinessName;
+    ownerName = ownerName || contactPerson;
+    email = normalizeEmail(email || contactEmail);
+    phone = phone || contactPhone;
+    password = password || adminPassword;
+    address = address || fullAddress;
 
     const resolvedLatitude = location?.lat ?? latitude ?? lat;
     const resolvedLongitude = location?.lng ?? longitude ?? lng;
 
-    if (
-      !businessName ||
-      !ownerName ||
-      !email ||
-      !phone ||
-      !password ||
-      resolvedLatitude === undefined ||
-      resolvedLongitude === undefined ||
-      !address ||
-      totalSlots === undefined ||
-      pricePerHour === undefined ||
-      !openingTime ||
-      !closingTime
-    ) {
+    const missingFields = [];
+    if (!businessName) missingFields.push("businessName (legalBusinessName)");
+    if (!ownerName) missingFields.push("ownerName (contactPerson)");
+    if (!email) missingFields.push("email (contactEmail)");
+    if (!phone) missingFields.push("phone (contactPhone)");
+    if (!password) missingFields.push("password (adminPassword)");
+    if (resolvedLatitude === undefined || resolvedLatitude === null) missingFields.push("latitude (map location)");
+    if (resolvedLongitude === undefined || resolvedLongitude === null) missingFields.push("longitude (map location)");
+    if (!address) missingFields.push("address (fullAddress)");
+    if (totalSlots === undefined || totalSlots === null) missingFields.push("totalSlots");
+    if (pricePerHour === undefined || pricePerHour === null) missingFields.push("pricePerHour");
+    if (!openingTime) missingFields.push("openingTime");
+    if (!closingTime) missingFields.push("closingTime");
+
+    if (missingFields.length > 0) {
       return res.status(400).json({
         success: false,
-        message:
-          "businessName, ownerName, email, phone, password, location.lat, location.lng, address, totalSlots, pricePerHour, openingTime, and closingTime are required"
+        message: `Missing required fields: ${missingFields.join(", ")}`
       });
     }
 
@@ -113,7 +130,7 @@ router.post("/signup", async (req, res) => {
     return res.status(201).json({
       success: true,
       message: "PMS registration successful",
-      pms: toSafePms(pms)
+      ...toSafePms(pms)
     });
   } catch (err) {
     console.error("PMS REGISTER ERROR:", err);
@@ -165,7 +182,7 @@ router.post("/login", async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "PMS login successful",
-      pms: toSafePms(pms)
+      ...toSafePms(pms)
     });
   } catch (err) {
     console.error("PMS LOGIN ERROR:", err);

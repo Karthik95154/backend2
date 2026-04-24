@@ -18,9 +18,14 @@ const toSafeUser = (user) => ({
 const toSafePms = (pms) => ({
   id: pms.id,
   businessName: pms.businessName,
+  legalBusinessName: pms.businessName,
+  parkingName: pms.parkingName || pms.businessName,
   ownerName: pms.ownerName,
+  contactPerson: pms.ownerName,
   email: pms.email,
+  contactEmail: pms.email,
   phone: pms.phone,
+  contactPhone: pms.phone,
   role: "admin"
 });
 
@@ -42,7 +47,7 @@ router.post("/login", async (req, res) => {
         return res.status(200).json({
           success: true,
           message: "User login successful",
-          user: toSafeUser(user)
+          ...toSafeUser(user)
         });
       }
     }
@@ -55,7 +60,7 @@ router.post("/login", async (req, res) => {
         return res.status(200).json({
           success: true,
           message: "PMS login successful",
-          user: toSafePms(pms) // Map to 'user' for consistency if needed, or keep 'pms'
+          ...toSafePms(pms)
         });
       }
     }
@@ -93,7 +98,7 @@ router.post("/signup", async (req, res) => {
     return res.status(201).json({
       success: true,
       message: "User signup successful",
-      user: toSafeUser(user)
+      ...toSafeUser(user)
     });
   } catch (err) {
     console.error("SIGNUP ERROR:", err);
