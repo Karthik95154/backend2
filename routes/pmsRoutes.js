@@ -27,7 +27,7 @@ const toSafePms = (pms) => ({
   updatedAt: pms.updatedAt
 });
 
-router.post("/register", async (req, res) => {
+router.post("/signup", async (req, res) => {
   try {
     let {
       businessName,

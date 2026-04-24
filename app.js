@@ -7,6 +7,7 @@ const pmsRoutes = require("./routes/pmsRoutes");
 const parkingRoutes = require("./routes/parkingRoutes");
 const bookingRoutes = require("./routes/bookingRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
+const authRoutes = require("./routes/authRoutes");
 
 const app = express();
 
@@ -23,13 +24,14 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-app.use("/api/user", userRoutes);
-app.use("/api/pms", pmsRoutes);
-app.use("/api", parkingRoutes);
-app.use("/api", bookingRoutes);
-app.use("/api", paymentRoutes);
+// Unified Auth
+app.use("/", authRoutes);
+
+// Other routes flattened to root
+app.use("/", pmsRoutes);
 app.use("/", parkingRoutes);
 app.use("/", bookingRoutes);
+app.use("/", paymentRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
