@@ -33,6 +33,7 @@ app.use("/api/auth", authRoutes);
 
 // Other routes flattened to /api
 app.use("/api", pmsRoutes);
+app.use("/api/slots", pmsRoutes);
 app.use("/api", parkingRoutes);
 app.use("/api", bookingRoutes);
 app.use("/api", paymentRoutes);

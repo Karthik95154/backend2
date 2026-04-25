@@ -245,6 +245,11 @@ router.get("/dashboard/stats", async (req, res) => {
   }
 });
 
+router.get("/availability", async (req, res) => {
+  const { startTime } = req.query;
+  res.json({ available: true });
+});
+
 router.get("/slots", async (req, res) => {
   try {
     const pms = await ParkingBusiness.findOne();
