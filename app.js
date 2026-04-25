@@ -25,13 +25,13 @@ app.get("/", (req, res) => {
 });
 
 // Unified Auth
-app.use("/", authRoutes);
+app.use("/api/auth", authRoutes);
 
-// Other routes flattened to root
-app.use("/", pmsRoutes);
-app.use("/", parkingRoutes);
-app.use("/", bookingRoutes);
-app.use("/", paymentRoutes);
+// Other routes flattened to /api
+app.use("/api", pmsRoutes);
+app.use("/api", parkingRoutes);
+app.use("/api", bookingRoutes);
+app.use("/api", paymentRoutes);
 
 app.use((req, res) => {
   res.status(404).json({

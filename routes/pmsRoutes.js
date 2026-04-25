@@ -194,7 +194,7 @@ router.post("/login", async (req, res) => {
   }
 });
 
-router.get("/business-profile", async (req, res) => {
+router.get("/business/profile", async (req, res) => {
   try {
     const pms = await ParkingBusiness.findOne();
     if (!pms) {
