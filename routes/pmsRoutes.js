@@ -1,7 +1,7 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
-const { UniqueConstraintError } = require("sequelize");
-const { ParkingBusiness } = require("../models");
+const { Op, UniqueConstraintError } = require("sequelize");
+const { ParkingBusiness, Booking } = require("../models");
 
 const router = express.Router();
 
@@ -191,6 +191,165 @@ router.post("/login", async (req, res) => {
       message: "Internal server error",
       error: err.message
     });
+  }
+});
+
+router.get("/dashboard/stats", async (req, res) => {
+  try {
+    const pms = await ParkingBusiness.findOne();
+    if (!pms) {
+      return res.status(200).json({
+        totalSlots: 0,
+        occupiedCount: 0,
+        availableCount: 0,
+        reservedCount: 0,
+        overstayCount: 0,
+        revenue: 0,
+        zoneCount: 0,
+        activeBookings: 0,
+      });
+    }
+
+    const [activeBookings, allBookings] = await Promise.all([
+      Booking.findAll({
+        where: {
+          parkingId: pms.id,
+          bookingStatus: { [Op.in]: ["Confirmed", "Checked-In"] }
+        }
+      }),
+      Booking.findAll({
+        where: { parkingId: pms.id }
+      })
+    ]);
+
+    const totalSlots = Number(pms.totalSlots || 0);
+    const occupiedCount = activeBookings.filter(b => b.bookingStatus === "Checked-In").length;
+    const reservedCount = activeBookings.filter(b => b.bookingStatus === "Confirmed").length;
+    const revenue = allBookings
+      .filter(b => b.paymentStatus === "Paid")
+      .reduce((sum, b) => sum + Number(b.totalAmount || 0), 0);
+
+    return res.status(200).json({
+      totalSlots,
+      occupiedCount,
+      availableCount: Math.max(totalSlots - activeBookings.length, 0),
+      reservedCount,
+      overstayCount: 0,
+      revenue,
+      zoneCount: 1, // Simplified for now
+      activeBookings: activeBookings.length,
+    });
+  } catch (err) {
+    console.error("STATS ERROR:", err);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
+router.get("/slots", async (req, res) => {
+  try {
+    const pms = await ParkingBusiness.findOne();
+    if (!pms) return res.status(200).json([]);
+
+    const totalSlots = Number(pms.totalSlots || 0);
+    const now = new Date();
+    const activeBookings = await Booking.findAll({
+      where: {
+        parkingId: pms.id,
+        bookingStatus: { [Op.in]: ["Confirmed", "Checked-In"] },
+        startTime: { [Op.lte]: now },
+        endTime: { [Op.gte]: now }
+      }
+    });
+
+    const slots = [];
+    const occupiedMap = new Map(activeBookings.map(b => [Number(b.slotNumber), b]));
+
+    for (let i = 1; i <= totalSlots; i++) {
+      const booking = occupiedMap.get(i);
+      slots.push({
+        id: `slot-${i}`,
+        number: String(i),
+        status: booking ? (booking.bookingStatus === "Checked-In" ? "occupied" : "reserved") : "free",
+        vehicleNumber: booking?.vehicleNumber,
+        zoneId: "zone-1"
+      });
+    }
+
+    return res.status(200).json(slots);
+  } catch (err) {
+    console.error("SLOTS ERROR:", err);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
+router.get("/parking-zones", async (req, res) => {
+  try {
+    const pms = await ParkingBusiness.findOne();
+    if (!pms) return res.status(200).json([]);
+
+    return res.status(200).json([{
+      id: "zone-1",
+      name: "Main Area",
+      capacity: pms.totalSlots,
+      type: "General",
+      rate: pms.pricePerHour
+    }]);
+  } catch (err) {
+    console.error("ZONES ERROR:", err);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
+router.get("/payments", async (req, res) => {
+  try {
+    const pms = await ParkingBusiness.findOne();
+    if (!pms) return res.status(200).json([]);
+
+    const bookings = await Booking.findAll({
+      where: {
+        parkingId: pms.id,
+        paymentStatus: "Paid"
+      },
+      order: [["updatedAt", "DESC"]]
+    });
+
+    const payments = bookings.map(b => ({
+      id: `PAY-${b.id}`,
+      bookingId: b.id,
+      amount: b.totalAmount,
+      status: "Paid",
+      date: b.updatedAt
+    }));
+
+    return res.status(200).json(payments);
+  } catch (err) {
+    console.error("PAYMENTS ERROR:", err);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
+router.get("/bookings", async (req, res) => {
+  try {
+    const pms = await ParkingBusiness.findOne();
+    if (!pms) return res.status(200).json([]);
+
+    const bookings = await Booking.findAll({
+      where: { parkingId: pms.id },
+      order: [["createdAt", "DESC"]]
+    });
+
+    return res.status(200).json(bookings.map(b => ({
+      id: b.id,
+      user: b.userId, // Simplified
+      vehicle: b.vehicleNumber,
+      time: b.startTime,
+      status: b.bookingStatus === "Checked-In" ? "active" : (b.bookingStatus === "Confirmed" ? "booked" : "completed"),
+      assignedSlotId: `slot-${b.slotNumber}`,
+      amount: b.totalAmount
+    })));
+  } catch (err) {
+    console.error("BOOKINGS ERROR:", err);
+    return res.status(500).json({ success: false, message: "Internal server error" });
   }
 });
 
