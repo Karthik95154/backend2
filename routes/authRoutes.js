@@ -12,7 +12,31 @@ const toSafeUser = (user) => ({
   name: user.name,
   email: user.email,
   phone: user.phone,
+  vehicles: user.vehicles || [],
   role: "user"
+});
+
+// Update user vehicles
+router.post("/user/vehicles", async (req, res) => {
+  try {
+    const { userId, vehicles } = req.body;
+    if (!userId || !Array.isArray(vehicles)) {
+      return res.status(400).json({ success: false, message: "userId and vehicles array are required" });
+    }
+
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    user.vehicles = vehicles;
+    await user.save();
+
+    return res.status(200).json({ success: true, vehicles: user.vehicles });
+  } catch (err) {
+    console.error("UPDATE VEHICLES ERROR:", err);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
 });
 
 const toSafePms = (pms) => ({

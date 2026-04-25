@@ -25,6 +25,11 @@ module.exports = (sequelize) =>
       password: {
         type: DataTypes.STRING,
         allowNull: false
+      },
+      vehicles: {
+        type: DataTypes.JSON,
+        defaultValue: [],
+        allowNull: false
       }
     },
     {
