@@ -24,6 +24,7 @@ const buildParkingResponse = (parking, activeBookingCount = 0) => {
     openingTime: parking.openingTime,
     closingTime: parking.closingTime,
     availableSlots,
+    name: parking.businessName,
     parking_name: parking.businessName,
     full_address: parking.address,
     total_slots: totalSlots,
