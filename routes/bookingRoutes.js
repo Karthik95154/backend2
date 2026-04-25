@@ -11,28 +11,18 @@ const getDurationHours = (startTime, endTime) => {
   return diffMs / (1000 * 60 * 60);
 };
 
-const findAvailableSlotNumber = async (parkingId, startTime, endTime, totalSlots) => {
+const isSlotAvailable = async (parkingId, startTime, endTime, totalSlots) => {
   const overlappingBookings = await Booking.findAll({
     where: {
       parkingId,
       bookingStatus: { [Op.in]: ACTIVE_BOOKING_STATUSES },
       startTime: { [Op.lt]: endTime },
       endTime: { [Op.gt]: startTime }
-    },
-    attributes: ["slotNumber"]
+    }
   });
 
-  const occupiedSlots = new Set(
-    overlappingBookings.map((booking) => Number(booking.slotNumber))
-  );
-
-  for (let slotNumber = 1; slotNumber <= Number(totalSlots); slotNumber += 1) {
-    if (!occupiedSlots.has(slotNumber)) {
-      return slotNumber;
-    }
-  }
-
-  return null;
+  // Check if we have at least one free physical slot
+  return overlappingBookings.length < Number(totalSlots);
 };
 
 router.post("/book", async (req, res) => {
@@ -93,14 +83,14 @@ router.post("/book", async (req, res) => {
       });
     }
 
-    const slotNumber = await findAvailableSlotNumber(
+    const available = await isSlotAvailable(
       parking.id,
       bookingStart,
       bookingEnd,
       parking.totalSlots
     );
 
-    if (!slotNumber) {
+    if (!available) {
       return res.status(400).json({
         success: false,
         message: "No slots available for the selected time"
@@ -111,7 +101,7 @@ router.post("/book", async (req, res) => {
       userId: user.id,
       parkingId: parking.id,
       vehicleNumber: String(vehicleNumber).trim().toUpperCase(),
-      slotNumber,
+      slotNumber: null, // JIT Allocation will set this later
       startTime: bookingStart,
       endTime: bookingEnd,
       totalAmount: Number((durationHours * Number(parking.pricePerHour || 0)).toFixed(2))

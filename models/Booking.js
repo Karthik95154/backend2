@@ -23,7 +23,7 @@ module.exports = (sequelize) =>
       },
       slotNumber: {
         type: DataTypes.INTEGER,
-        allowNull: false
+        allowNull: true
       },
       totalAmount: {
         type: DataTypes.FLOAT,

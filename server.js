@@ -1,6 +1,10 @@
 require("dotenv").config();
+const { startSlotAllocator } = require("./services/slotAllocator");
 const app = require("./app");
 const { sequelize } = require("./models");
+
+// Start Background Services
+startSlotAllocator();
 
 const PORT = process.env.PORT || 5000;
 
