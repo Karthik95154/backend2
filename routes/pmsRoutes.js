@@ -246,9 +246,37 @@ router.get("/dashboard/stats", async (req, res) => {
 });
 
 router.get("/availability", async (req, res) => {
-  const { startTime, endTime } = req.query;
-  // TODO: return available slots based on time range
-  res.json([]);
+  try {
+    const { startTime, endTime, parkingId } = req.query;
+    
+    // Find the business (if parkingId not provided, take the first one)
+    const pms = parkingId 
+      ? await ParkingBusiness.findByPk(parkingId)
+      : await ParkingBusiness.findOne();
+
+    if (!pms) return res.json([]);
+
+    const start = startTime ? new Date(startTime) : new Date();
+    const end = endTime ? new Date(endTime) : new Date(start.getTime() + 3600000);
+
+    const overlappingBookings = await Booking.findAll({
+      where: {
+        parkingId: pms.id,
+        bookingStatus: { [Op.in]: ["Confirmed", "Checked-In"] },
+        startTime: { [Op.lt]: end },
+        endTime: { [Op.gt]: start }
+      }
+    });
+
+    // Return the list of occupied slots for the frontend to normalize
+    return res.json(overlappingBookings.map(b => ({
+      slotNumber: b.slotNumber,
+      status: b.bookingStatus === "Checked-In" ? "occupied" : "reserved"
+    })));
+  } catch (err) {
+    console.error("AVAILABILITY ERROR:", err);
+    return res.status(500).json([]);
+  }
 });
 
 router.get("/slots", async (req, res) => {
