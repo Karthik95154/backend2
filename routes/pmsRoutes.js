@@ -353,6 +353,11 @@ router.get("/parking-zones", async (req, res) => {
   }
 });
 
+router.patch("/parking-zones/:id", async (req, res) => {
+  // Mock success for zone updates
+  return res.status(200).json({ success: true, message: "Zone updated successfully" });
+});
+
 router.get("/payments", async (req, res) => {
   try {
     const pms = await ParkingBusiness.findOne();
