@@ -84,22 +84,47 @@ const allocateAndNotify = async (booking) => {
 };
 
 const sendWhatsAppNotification = async (booking, slotNumber) => {
-  const phone = booking.user.phone || "Customer";
+  const phone = booking.user.phone || "";
+  const businessName = booking.parking.businessName;
+  const startTime = new Date(booking.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
   const message = `
 🚗 *ParkScope Allocation*
-Your booking at *${booking.parking.businessName}* is starting soon!
+Your booking at *${businessName}* is starting soon!
+
 📍 *Assigned Slot:* Slot #${slotNumber}
-🕒 *Time:* ${new Date(booking.startTime).toLocaleTimeString()}
+🕒 *Time:* ${startTime}
 Vehicle: ${booking.vehicleNumber}
-Please show this at the entrance.
+
+Please show this at the entrance for quick entry.
   `;
 
-  console.log(`----------------------------------------`);
-  console.log(`[WHATSAPP SENT to ${phone}]`);
-  console.log(message);
-  console.log(`----------------------------------------`);
-  
-  // Here we would call a WhatsApp API (e.g. Twilio or similar)
+  console.log(`[WHATSAPP QUEUED] to ${phone}: Slot ${slotNumber}`);
+
+  // REAL TWILIO INTEGRATION
+  if (process.env.TWILIO_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_WHATSAPP_NUMBER) {
+    try {
+      const client = require('twilio')(process.env.TWILIO_SID, process.env.TWILIO_AUTH_TOKEN);
+      
+      // Ensure phone is in E.164 format (e.g., +91...)
+      const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`;
+
+      await client.messages.create({
+        from: process.env.TWILIO_WHATSAPP_NUMBER,
+        body: message,
+        to: `whatsapp:${formattedPhone}`
+      });
+      console.log(`[WHATSAPP SENT] Real message sent to ${formattedPhone}`);
+    } catch (err) {
+      console.error(`[WHATSAPP FAILED] Twilio Error:`, err.message);
+    }
+  } else {
+    console.log(`----------------------------------------`);
+    console.log(`[WHATSAPP SIMULATION] (Add TWILIO_SID to Render to send for real)`);
+    console.log(`To: ${phone}`);
+    console.log(message);
+    console.log(`----------------------------------------`);
+  }
 };
 
 module.exports = { startSlotAllocator };
