@@ -210,11 +210,14 @@ router.get("/dashboard/stats", async (req, res) => {
       });
     }
 
+    const now = new Date();
     const [activeBookings, allBookings] = await Promise.all([
       Booking.findAll({
         where: {
           parkingId: pms.id,
-          bookingStatus: { [Op.in]: ["Confirmed", "Checked-In"] }
+          bookingStatus: { [Op.in]: ["Confirmed", "Checked-In"] },
+          startTime: { [Op.lte]: now },
+          endTime: { [Op.gte]: now }
         }
       }),
       Booking.findAll({

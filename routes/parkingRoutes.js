@@ -37,10 +37,13 @@ const getCurrentActiveCounts = async (parkingIds) => {
     return {};
   }
 
+  const now = new Date();
   const activeBookings = await Booking.findAll({
     where: {
       parkingId: { [Op.in]: parkingIds },
-      bookingStatus: { [Op.in]: ACTIVE_BOOKING_STATUSES }
+      bookingStatus: { [Op.in]: ACTIVE_BOOKING_STATUSES },
+      startTime: { [Op.lte]: now },
+      endTime: { [Op.gte]: now }
     },
     attributes: ["parkingId"]
   });
