@@ -20,6 +20,10 @@ app.get("/health", (req, res) => {
   res.status(200).json({ success: true, status: "ok" });
 });
 
+app.get("/api/health", (req, res) => {
+  res.status(200).json({ success: true, status: "ok", prefix: "/api" });
+});
+
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
