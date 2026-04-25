@@ -226,4 +226,23 @@ router.post("/signup", async (req, res) => {
   }
 });
 
+// Fetch user profile
+router.get("/me/:id", async (req, res) => {
+  try {
+    const user = await User.findByPk(req.params.id);
+    if (!user) {
+      // Also try PMS
+      const pms = await ParkingBusiness.findByPk(req.params.id);
+      if (pms) {
+        return res.status(200).json({ success: true, ...toSafePms(pms) });
+      }
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+    return res.status(200).json({ success: true, ...toSafeUser(user) });
+  } catch (err) {
+    console.error("GET PROFILE ERROR:", err);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
 module.exports = router;
