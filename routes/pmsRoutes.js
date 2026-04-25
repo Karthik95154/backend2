@@ -1,7 +1,7 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const { Op, UniqueConstraintError } = require("sequelize");
-const { ParkingBusiness, Booking } = require("../models");
+const { ParkingBusiness, Booking, User } = require("../models");
 
 const router = express.Router();
 
@@ -278,6 +278,53 @@ router.get("/slots", async (req, res) => {
     return res.status(200).json(slots);
   } catch (err) {
     console.error("SLOTS ERROR:", err);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
+router.patch("/slots/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, vehicleNumber } = req.body;
+    const slotNumber = id.replace("slot-", "");
+
+    const pms = await ParkingBusiness.findOne();
+    if (!pms) return res.status(404).json({ success: false, message: "Business not found" });
+
+    if (status === "free") {
+      // End any active booking for this slot
+      await Booking.update(
+        { bookingStatus: "Completed" },
+        {
+          where: {
+            parkingId: pms.id,
+            slotNumber: slotNumber,
+            bookingStatus: { [Op.in]: ["Confirmed", "Checked-In"] }
+          }
+        }
+      );
+    } else if (status === "occupied") {
+      // Find a valid user to associate with this manual booking
+      const user = await User.findOne();
+      if (!user) return res.status(400).json({ success: false, message: "No users found in database to link booking" });
+
+      // Create a manual check-in booking
+      await Booking.create({
+        parkingId: pms.id,
+        userId: user.id,
+        vehicleNumber: vehicleNumber || "MANUAL",
+        slotNumber: slotNumber,
+        startTime: new Date(),
+        endTime: new Date(Date.now() + 3600000), // 1 hour default
+        bookingStatus: "Checked-In",
+        paymentStatus: "Pending",
+        totalAmount: pms.pricePerHour
+      });
+    }
+
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    console.error("SLOT UPDATE ERROR:", err);
     return res.status(500).json({ success: false, message: "Internal server error" });
   }
 });
