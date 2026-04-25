@@ -442,6 +442,33 @@ router.get("/bookings", async (req, res) => {
   }
 });
 
+router.patch("/bookings/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const booking = await Booking.findByPk(id);
+    if (!booking) {
+      return res.status(404).json({ success: false, message: "Booking not found" });
+    }
+
+    // Map PMS status to Backend status
+    let newStatus = booking.bookingStatus;
+    if (status === "active") newStatus = "Checked-In";
+    if (status === "completed") newStatus = "Completed";
+    if (status === "cancelled") newStatus = "Cancelled";
+    if (status === "assigned") newStatus = "Confirmed";
+
+    booking.bookingStatus = newStatus;
+    await booking.save();
+
+    return res.status(200).json({ success: true, booking });
+  } catch (err) {
+    console.error("BOOKING UPDATE ERROR:", err);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
 router.get("/business/profile", async (req, res) => {
   try {
     const pms = await ParkingBusiness.findOne();
