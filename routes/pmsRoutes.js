@@ -246,8 +246,9 @@ router.get("/dashboard/stats", async (req, res) => {
 });
 
 router.get("/availability", async (req, res) => {
-  const { startTime } = req.query;
-  res.json({ available: true });
+  const { startTime, endTime } = req.query;
+  // TODO: return available slots based on time range
+  res.json([]);
 });
 
 router.get("/slots", async (req, res) => {
