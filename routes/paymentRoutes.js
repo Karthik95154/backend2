@@ -6,13 +6,15 @@ const { Booking } = require("../models");
 const router = express.Router();
 
 const getRazorpayClient = () => {
-  const keyId = process.env.RAZORPAY_KEY_ID;
-  const keySecret = process.env.RAZORPAY_KEY_SECRET;
+  const keyId = process.env.RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY;
+  const keySecret = process.env.RAZORPAY_KEY_SECRET || process.env.RAZORPAY_SECRET;
 
   if (!keyId || !keySecret) {
+    console.log("RAZORPAY CONFIG MISSING: No key or secret found in environment");
     return null;
   }
 
+  console.log("RAZORPAY CLIENT INITIALIZED with Key:", keyId);
   return new Razorpay({
     key_id: keyId,
     key_secret: keySecret
@@ -40,24 +42,31 @@ router.post("/create-order", async (req, res) => {
 
     const razorpay = getRazorpayClient();
     if (!razorpay) {
-      // Mock order for testing if Razorpay is not configured
-      const mockOrder = {
-        id: `order_mock_${Date.now()}`,
-        amount: Math.round(Number(booking.totalAmount || 0) * 100),
-        currency: "INR",
-        receipt: booking.id
-      };
-      
-      booking.razorpay_order_id = mockOrder.id;
-      booking.paymentStatus = "Pending";
-      await booking.save();
+      if (process.env.ALLOW_MOCK_PAYMENTS === 'true') {
+        // Mock order for testing
+        const mockOrder = {
+          id: `order_mock_${Date.now()}`,
+          amount: Math.round(Number(booking.totalAmount || 0) * 100),
+          currency: "INR",
+          receipt: booking.id
+        };
+        
+        booking.razorpay_order_id = mockOrder.id;
+        booking.paymentStatus = "Pending";
+        await booking.save();
 
-      return res.status(200).json({
-        success: true,
-        order: mockOrder,
-        mock: true,
-        key: "rzp_test_mock_key"
-      });
+        return res.status(200).json({
+          success: true,
+          order: mockOrder,
+          mock: true,
+          key: "rzp_test_mock_key"
+        });
+      } else {
+        return res.status(500).json({
+          success: false,
+          message: "Razorpay is not configured on the server. Please add RAZORPAY_KEY and RAZORPAY_SECRET to .env"
+        });
+      }
     }
 
     if (booking.paymentStatus === "Paid") {
