@@ -7,7 +7,7 @@ const { Booking, ParkingBusiness, User } = require("../models");
  */
 const startSlotAllocator = () => {
   console.log("JIT Slot Allocator Service Started (Every 1 minute)");
-  
+
   setInterval(async () => {
     try {
       const now = new Date();
@@ -44,7 +44,7 @@ const startSlotAllocator = () => {
 const allocateAndNotify = async (booking) => {
   try {
     const { parking, startTime, endTime } = booking;
-    
+
     // Find available slots at this parking for this specific time range
     const overlappingBookings = await Booking.findAll({
       where: {
@@ -70,9 +70,9 @@ const allocateAndNotify = async (booking) => {
     if (allocatedSlot) {
       booking.slotNumber = allocatedSlot;
       await booking.save();
-      
+
       console.log(`[JIT SUCCESS] Allocated Slot ${allocatedSlot} for Booking ${booking.id}`);
-      
+
       // Send WhatsApp Notification (Mock)
       await sendWhatsAppNotification(booking, allocatedSlot);
     } else {
@@ -105,7 +105,7 @@ Please show this at the entrance for quick entry.
   if (process.env.TWILIO_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_WHATSAPP_NUMBER) {
     try {
       const client = require('twilio')(process.env.TWILIO_SID, process.env.TWILIO_AUTH_TOKEN);
-      
+
       // Ensure phone is in E.164 format (e.g., +91...)
       const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`;
 

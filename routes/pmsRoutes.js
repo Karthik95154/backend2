@@ -196,7 +196,11 @@ router.post("/login", async (req, res) => {
 
 router.get("/dashboard/stats", async (req, res) => {
   try {
-    const pms = await ParkingBusiness.findOne();
+    const { parkingId } = req.query;
+    const pms = parkingId 
+      ? await ParkingBusiness.findByPk(parkingId)
+      : await ParkingBusiness.findOne();
+
     if (!pms) {
       return res.status(200).json({
         totalSlots: 0,
@@ -239,7 +243,7 @@ router.get("/dashboard/stats", async (req, res) => {
       reservedCount,
       overstayCount: 0,
       revenue,
-      zoneCount: 1, // Simplified for now
+      zoneCount: 1, 
       activeBookings: activeBookings.length,
     });
   } catch (err) {
@@ -284,7 +288,11 @@ router.get("/availability", async (req, res) => {
 
 router.get("/slots", async (req, res) => {
   try {
-    const pms = await ParkingBusiness.findOne();
+    const { parkingId } = req.query;
+    const pms = parkingId 
+      ? await ParkingBusiness.findByPk(parkingId)
+      : await ParkingBusiness.findOne();
+
     if (!pms) return res.status(200).json([]);
 
     const totalSlots = Number(pms.totalSlots || 0);
@@ -322,10 +330,12 @@ router.get("/slots", async (req, res) => {
 router.patch("/slots/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, vehicleNumber } = req.body;
+    const { status, vehicleNumber, parkingId } = req.body;
     const slotNumber = id.replace("slot-", "");
 
-    const pms = await ParkingBusiness.findOne();
+    const pms = parkingId 
+      ? await ParkingBusiness.findByPk(parkingId)
+      : await ParkingBusiness.findOne();
     if (!pms) return res.status(404).json({ success: false, message: "Business not found" });
 
     if (status === "free") {
@@ -368,7 +378,10 @@ router.patch("/slots/:id", async (req, res) => {
 
 router.get("/parking-zones", async (req, res) => {
   try {
-    const pms = await ParkingBusiness.findOne();
+    const { parkingId } = req.query;
+    const pms = parkingId 
+      ? await ParkingBusiness.findByPk(parkingId)
+      : await ParkingBusiness.findOne();
     if (!pms) return res.status(200).json([]);
 
     return res.status(200).json([{
@@ -385,13 +398,40 @@ router.get("/parking-zones", async (req, res) => {
 });
 
 router.patch("/parking-zones/:id", async (req, res) => {
-  // Mock success for zone updates
-  return res.status(200).json({ success: true, message: "Zone updated successfully" });
+  try {
+    const { capacity, rate, parkingId } = req.body;
+    const pms = parkingId 
+      ? await ParkingBusiness.findByPk(parkingId)
+      : await ParkingBusiness.findOne();
+    if (!pms) return res.status(404).json({ success: false, message: "Business not found" });
+
+    if (capacity !== undefined) pms.totalSlots = Number(capacity);
+    if (rate !== undefined) pms.pricePerHour = Number(rate);
+
+    await pms.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Zone updated successfully",
+      zone: {
+        id: "zone-1",
+        name: pms.businessName,
+        capacity: pms.totalSlots,
+        rate: pms.pricePerHour
+      }
+    });
+  } catch (err) {
+    console.error("ZONE UPDATE ERROR:", err);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
 });
 
 router.get("/payments", async (req, res) => {
   try {
-    const pms = await ParkingBusiness.findOne();
+    const { parkingId } = req.query;
+    const pms = parkingId 
+      ? await ParkingBusiness.findByPk(parkingId)
+      : await ParkingBusiness.findOne();
     if (!pms) return res.status(200).json([]);
 
     const bookings = await Booking.findAll({
@@ -419,7 +459,10 @@ router.get("/payments", async (req, res) => {
 
 router.get("/bookings", async (req, res) => {
   try {
-    const pms = await ParkingBusiness.findOne();
+    const { parkingId } = req.query;
+    const pms = parkingId 
+      ? await ParkingBusiness.findByPk(parkingId)
+      : await ParkingBusiness.findOne();
     if (!pms) return res.status(200).json([]);
 
     const bookings = await Booking.findAll({
@@ -445,7 +488,7 @@ router.get("/bookings", async (req, res) => {
 router.patch("/bookings/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, assignedSlotId } = req.body;
 
     const booking = await Booking.findByPk(id);
     if (!booking) {
@@ -460,6 +503,16 @@ router.patch("/bookings/:id", async (req, res) => {
     if (status === "assigned") newStatus = "Confirmed";
 
     booking.bookingStatus = newStatus;
+
+    // Handle manual slot assignment if provided
+    if (assignedSlotId) {
+      // assignedSlotId is usually "slot-N"
+      const slotNumber = parseInt(assignedSlotId.replace("slot-", ""), 10);
+      if (!isNaN(slotNumber)) {
+        booking.slotNumber = slotNumber;
+      }
+    }
+
     await booking.save();
 
     return res.status(200).json({ success: true, booking });
@@ -471,7 +524,10 @@ router.patch("/bookings/:id", async (req, res) => {
 
 router.get("/business/profile", async (req, res) => {
   try {
-    const pms = await ParkingBusiness.findOne();
+    const { parkingId } = req.query;
+    const pms = parkingId 
+      ? await ParkingBusiness.findByPk(parkingId)
+      : await ParkingBusiness.findOne();
     if (!pms) {
       return res.status(404).json({ success: false, message: "No business profile found" });
     }
