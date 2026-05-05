@@ -333,6 +333,4 @@ router.post("/reset-password", async (req, res) => {
     console.error("RESET PASS ERROR:", err);
     return res.status(500).json({ success: false, message: "Internal server error" });
   }
-});
-
-module.exports = router;
+});module.exports = router;
