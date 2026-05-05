@@ -83,44 +83,22 @@ const allocateAndNotify = async (booking) => {
 };
 
 const sendWhatsAppNotification = async (booking, slotNumber) => {
+  const { sendWhatsAppMessage } = require("./messagingService");
   const phone = booking.user.phone || "";
   const businessName = booking.parking.businessName;
-  const startTime = new Date(booking.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  
+  // Format time for IST
+  const startTime = new Date(booking.startTime).toLocaleTimeString('en-IN', { 
+    timeZone: 'Asia/Kolkata',
+    hour: '2-digit', 
+    minute: '2-digit',
+    hour12: true 
+  });
 
-  const message = `
-🚗 *ParkScope Allocation*
-Your booking at *${businessName}* is starting soon!
+  const message = `🚗 *ParkScope Allocation*\n\nYour booking at *${businessName}* is starting soon!\n\n📍 *Slot:* #${slotNumber}\n🕒 *Start Time:* ${startTime}\n🚘 *Vehicle:* ${booking.vehicleNumber}\n\nPlease arrive on time. Thank you!`;
 
-📍 *Assigned Slot:* Slot #${slotNumber}
-🕒 *Time:* ${startTime}
-Vehicle: ${booking.vehicleNumber}
-
-Please show this at the entrance for quick entry.
-  `;
-
-  console.log(`[WHATSAPP QUEUED] to ${phone}: Slot ${slotNumber}`);
-
-  // REAL TWILIO INTEGRATION
-  if (process.env.TWILIO_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_WHATSAPP_NUMBER) {
-    try {
-      const client = require('twilio')(process.env.TWILIO_SID, process.env.TWILIO_AUTH_TOKEN);
-
-      // Ensure phone is in E.164 format (e.g., +91...)
-      const formattedPhone = phone.startsWith('+') ? phone : `+91${phone.replace(/\D/g, "").slice(-10)}`;
-
-      await client.messages.create({
-        from: process.env.TWILIO_WHATSAPP_NUMBER,
-        body: message,
-        to: `whatsapp:${formattedPhone}`
-      });
-      console.log(`[WHATSAPP SUCCESS] Real message sent to ${formattedPhone}`);
-    } catch (err) {
-      console.error(`[WHATSAPP FAILED] Twilio Error:`, err.message);
-    }
-  } else {
-    console.log(`[WHATSAPP SKIPPED] Missing Twilio environment variables on Render.`);
-    console.log(`To: ${phone} | Msg: Your slot #${slotNumber} is assigned.`);
-  }
+  console.log(`[JIT NOTIFY] Queuing message for Slot ${slotNumber} to ${phone}`);
+  await sendWhatsAppMessage(phone, message);
 };
 
 module.exports = { startSlotAllocator };

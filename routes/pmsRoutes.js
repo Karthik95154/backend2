@@ -495,20 +495,25 @@ router.get("/payments", async (req, res) => {
 
 router.post("/bookings", async (req, res) => {
   try {
-    const { parkingId, userPhone, vehicleNumber, startTime, endTime, assignedSlotId, amount } = req.body;
-
+    const { parkingId, userPhone, vehicleNumber, startTime, durationHours, assignedSlotId } = req.body;
     const pms = parkingId 
       ? await ParkingBusiness.findByPk(parkingId)
       : await ParkingBusiness.findOne();
 
     if (!pms) return res.status(404).json({ success: false, message: "Business not found" });
 
+    // Calculate details
+    const hours = Number(durationHours) || 1;
+    const start = startTime ? new Date(startTime) : new Date();
+    const end = new Date(start.getTime() + hours * 3600000);
+    const amount = hours * pms.pricePerHour;
+
     // Find or create a temporary "Offline User" record
     let user = await User.findOne({ where: { phone: userPhone || "OFFLINE" } });
     if (!user) {
       user = await User.create({
-        name: "Offline Customer",
-        email: `offline_${Date.now()}@example.com`,
+        name: "Walk-in Customer",
+        email: `offline_${Date.now()}@parkscope.com`,
         phone: userPhone || "OFFLINE",
         password: "N/A"
       });
@@ -519,14 +524,21 @@ router.post("/bookings", async (req, res) => {
     const booking = await Booking.create({
       parkingId: pms.id,
       userId: user.id,
-      vehicleNumber: vehicleNumber || "OFFLINE",
+      vehicleNumber: vehicleNumber || "WALK-IN",
       slotNumber: slotNumber,
-      startTime: startTime ? new Date(startTime) : new Date(),
-      endTime: endTime ? new Date(endTime) : new Date(Date.now() + 3600000),
-      bookingStatus: slotNumber ? "Checked-In" : "Confirmed", // If slot given, assume they are arriving now
-      paymentStatus: "Paid", // Manual/Offline payment
-      totalAmount: amount || pms.pricePerHour
+      startTime: start,
+      endTime: end,
+      bookingStatus: "Checked-In",
+      paymentStatus: "Paid",
+      totalAmount: amount
     });
+
+    // Send WhatsApp Notification to Walk-in Customer
+    if (userPhone && userPhone !== "OFFLINE") {
+      const { sendWhatsAppMessage } = require("../services/messagingService");
+      const message = `🚗 *ParkScope Walk-in Check-in*\n\nWelcome! Your vehicle *${vehicleNumber}* is checked in.\n\n📍 *Slot:* ${slotNumber || "General"}\n⏱️ *Duration:* ${hours} Hour(s)\n💰 *Paid:* Rs ${amount.toFixed(2)}\n\nThank you for parking with us!`;
+      await sendWhatsAppMessage(userPhone, message);
+    }
 
     return res.status(201).json({
       success: true,
