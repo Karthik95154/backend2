@@ -22,8 +22,10 @@ const getRazorpayClient = () => {
   }
 
   try {
-    // Log masked keys for debugging
-    console.log(`RAZORPAY INIT: Key starts with ${keyId.substring(0, 8)}... (Length: ${keyId.length})`);
+    // Log masked credentials for debugging
+    console.log(`RAZORPAY DEBUG: Key ID starts with [${keyId.substring(0, 10)}] (Length: ${keyId.length})`);
+    console.log(`RAZORPAY DEBUG: Key Secret starts with [${keySecret.substring(0, 4)}] (Length: ${keySecret.length})`);
+    
     return new Razorpay({
       key_id: keyId,
       key_secret: keySecret
