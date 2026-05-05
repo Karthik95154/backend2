@@ -219,10 +219,17 @@ router.get("/dashboard/stats", async (req, res) => {
       Booking.findAll({
         where: {
           parkingId: pms.id,
-          paymentStatus: "Paid", // ONLY PAID BOOKINGS
-          bookingStatus: { [Op.in]: ["Confirmed", "Checked-In"] },
-          startTime: { [Op.lte]: now },
-          endTime: { [Op.gte]: now }
+          paymentStatus: "Paid",
+          [Op.or]: [
+            { 
+              bookingStatus: "Checked-In" // Physically present
+            },
+            {
+              bookingStatus: "Confirmed",
+              startTime: { [Op.lte]: now },
+              endTime: { [Op.gte]: now }
+            }
+          ]
         }
       }),
       Booking.findAll({
@@ -290,10 +297,15 @@ router.get("/availability", async (req, res) => {
     const overlappingBookings = await Booking.findAll({
       where: {
         parkingId: pms.id,
-        paymentStatus: "Paid", // ONLY PAID BOOKINGS
-        bookingStatus: { [Op.in]: ["Confirmed", "Checked-In"] },
-        startTime: { [Op.lt]: end },
-        endTime: { [Op.gt]: start }
+        paymentStatus: "Paid",
+        [Op.or]: [
+          { bookingStatus: "Checked-In" },
+          {
+            bookingStatus: "Confirmed",
+            startTime: { [Op.lt]: end },
+            endTime: { [Op.gt]: start }
+          }
+        ]
       }
     });
 
@@ -325,10 +337,15 @@ router.get("/slots", async (req, res) => {
     const activeBookings = await Booking.findAll({
       where: {
         parkingId: pms.id,
-        paymentStatus: "Paid", // ONLY PAID BOOKINGS
-        bookingStatus: { [Op.in]: ["Confirmed", "Checked-In"] },
-        startTime: { [Op.lte]: now },
-        endTime: { [Op.gte]: now }
+        paymentStatus: "Paid",
+        [Op.or]: [
+          { bookingStatus: "Checked-In" },
+          {
+            bookingStatus: "Confirmed",
+            startTime: { [Op.lte]: now },
+            endTime: { [Op.gte]: now }
+          }
+        ]
       }
     });
 
@@ -390,7 +407,7 @@ router.patch("/slots/:id", async (req, res) => {
         startTime: new Date(),
         endTime: new Date(Date.now() + 3600000), // 1 hour default
         bookingStatus: "Checked-In",
-        paymentStatus: "Pending",
+        paymentStatus: "Paid",
         totalAmount: pms.pricePerHour
       });
     }
@@ -480,6 +497,52 @@ router.get("/payments", async (req, res) => {
   } catch (err) {
     console.error("PAYMENTS ERROR:", err);
     return res.status(500).json({ success: false, message: `Payments Error: ${err.message}` });
+  }
+});
+
+router.post("/bookings", async (req, res) => {
+  try {
+    const { parkingId, userPhone, vehicleNumber, startTime, endTime, assignedSlotId, amount } = req.body;
+
+    const pms = parkingId 
+      ? await ParkingBusiness.findByPk(parkingId)
+      : await ParkingBusiness.findOne();
+
+    if (!pms) return res.status(404).json({ success: false, message: "Business not found" });
+
+    // Find or create a temporary "Offline User" record
+    let user = await User.findOne({ where: { phone: userPhone || "OFFLINE" } });
+    if (!user) {
+      user = await User.create({
+        name: "Offline Customer",
+        email: `offline_${Date.now()}@example.com`,
+        phone: userPhone || "OFFLINE",
+        password: "N/A"
+      });
+    }
+
+    const slotNumber = assignedSlotId ? parseInt(assignedSlotId.replace("slot-", ""), 10) : null;
+
+    const booking = await Booking.create({
+      parkingId: pms.id,
+      userId: user.id,
+      vehicleNumber: vehicleNumber || "OFFLINE",
+      slotNumber: slotNumber,
+      startTime: startTime ? new Date(startTime) : new Date(),
+      endTime: endTime ? new Date(endTime) : new Date(Date.now() + 3600000),
+      bookingStatus: slotNumber ? "Checked-In" : "Confirmed", // If slot given, assume they are arriving now
+      paymentStatus: "Paid", // Manual/Offline payment
+      totalAmount: amount || pms.pricePerHour
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Offline booking created successfully",
+      booking
+    });
+  } catch (err) {
+    console.error("MANUAL BOOKING ERROR:", err);
+    return res.status(500).json({ success: false, message: `Manual Booking Error: ${err.message}` });
   }
 });
 
