@@ -10,16 +10,21 @@ const getRazorpayClient = () => {
   const keyId = process.env.RAZORPAY_KEY_ID;
   const keySecret = process.env.RAZORPAY_KEY_SECRET;
 
-  if (!keyId || !keySecret) {
-    console.log("RAZORPAY CONFIG MISSING: No key or secret found in environment");
+  if (!keyId || !keySecret || keyId === "undefined" || keySecret === "undefined") {
+    console.log("RAZORPAY CONFIG MISSING OR INVALID: Check environment variables");
     return null;
   }
 
-  console.log("RAZORPAY CLIENT INITIALIZED with Key:", keyId);
-  return new Razorpay({
-    key_id: keyId,
-    key_secret: keySecret
-  });
+  try {
+    console.log("RAZORPAY CLIENT INITIALIZED with Key:", keyId);
+    return new Razorpay({
+      key_id: keyId,
+      key_secret: keySecret
+    });
+  } catch (err) {
+    console.error("RAZORPAY INIT ERROR:", err);
+    return null;
+  }
 };
 
 router.post("/create-order", async (req, res) => {
@@ -101,10 +106,22 @@ router.post("/create-order", async (req, res) => {
     });
   } catch (err) {
     console.error("CREATE ORDER ERROR:", err);
+    
+    let errorDetail = "Unknown Error";
+    if (typeof err === "string") errorDetail = err;
+    else if (err instanceof Error) errorDetail = err.message;
+    else {
+      try {
+        errorDetail = JSON.stringify(err);
+      } catch (e) {
+        errorDetail = "Unserializable Error";
+      }
+    }
+
     return res.status(500).json({
       success: false,
-      message: `Create Order Error: ${err.message}`,
-      error: err.message
+      message: `Create Order Error: ${errorDetail}`,
+      error: err
     });
   }
 });
