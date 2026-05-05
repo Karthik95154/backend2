@@ -21,8 +21,7 @@ const startSlotAllocator = () => {
           paymentStatus: "Paid",
           bookingStatus: "Confirmed",
           startTime: {
-            [Op.lte]: fiveMinutesFromNow,
-            [Op.gt]: now // Starting soon
+            [Op.lte]: fiveMinutesFromNow
           }
         },
         include: [{ model: ParkingBusiness, as: "parking" }, { model: User, as: "user" }]
@@ -107,23 +106,20 @@ Please show this at the entrance for quick entry.
       const client = require('twilio')(process.env.TWILIO_SID, process.env.TWILIO_AUTH_TOKEN);
 
       // Ensure phone is in E.164 format (e.g., +91...)
-      const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`;
+      const formattedPhone = phone.startsWith('+') ? phone : `+91${phone.replace(/\D/g, "").slice(-10)}`;
 
       await client.messages.create({
         from: process.env.TWILIO_WHATSAPP_NUMBER,
         body: message,
         to: `whatsapp:${formattedPhone}`
       });
-      console.log(`[WHATSAPP SENT] Real message sent to ${formattedPhone}`);
+      console.log(`[WHATSAPP SUCCESS] Real message sent to ${formattedPhone}`);
     } catch (err) {
       console.error(`[WHATSAPP FAILED] Twilio Error:`, err.message);
     }
   } else {
-    console.log(`----------------------------------------`);
-    console.log(`[WHATSAPP SIMULATION] (Add TWILIO_SID to Render to send for real)`);
-    console.log(`To: ${phone}`);
-    console.log(message);
-    console.log(`----------------------------------------`);
+    console.log(`[WHATSAPP SKIPPED] Missing Twilio environment variables on Render.`);
+    console.log(`To: ${phone} | Msg: Your slot #${slotNumber} is assigned.`);
   }
 };
 

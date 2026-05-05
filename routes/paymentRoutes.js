@@ -101,33 +101,6 @@ router.post("/create-order", async (req, res) => {
     });
   } catch (err) {
     console.error("CREATE ORDER ERROR:", err);
-    
-    if (process.env.ALLOW_MOCK_PAYMENTS === 'true') {
-      console.log("ERROR OCCURRED, FALLING BACK TO MOCK ORDER");
-      const booking = await Booking.findByPk(req.body.bookingId).catch(() => null);
-      
-      const mockOrder = {
-        id: `order_mock_err_${Date.now()}`,
-        amount: Math.round(Number(booking?.totalAmount || 10) * 100),
-        currency: "INR",
-        receipt: req.body.bookingId
-      };
-      
-      if (booking) {
-        booking.razorpay_order_id = mockOrder.id;
-        booking.paymentStatus = "Pending";
-        await booking.save().catch(() => null);
-      }
-
-      return res.status(200).json({
-        success: true,
-        order: mockOrder,
-        mock: true,
-        key: "rzp_test_mock_key",
-        message: "Fallback to mock due to Razorpay error: " + err.message
-      });
-    }
-
     return res.status(500).json({
       success: false,
       message: `Create Order Error: ${err.message}`,
