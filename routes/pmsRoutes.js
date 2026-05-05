@@ -338,14 +338,7 @@ router.get("/slots", async (req, res) => {
       where: {
         parkingId: pms.id,
         paymentStatus: "Paid",
-        [Op.or]: [
-          { bookingStatus: "Checked-In" },
-          {
-            bookingStatus: "Confirmed",
-            startTime: { [Op.lte]: now },
-            endTime: { [Op.gte]: now }
-          }
-        ]
+        bookingStatus: { [Op.in]: ["Confirmed", "Checked-In"] }
       }
     });
 
