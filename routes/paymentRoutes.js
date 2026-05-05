@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const express = require("express");
 const Razorpay = require("razorpay");
+require("dotenv").config(); // Ensure env is loaded in this module
 const { Booking, ParkingBusiness } = require("../models");
 const { sendWhatsAppMessage } = require("../services/messagingService");
 
