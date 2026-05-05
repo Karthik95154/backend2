@@ -219,13 +219,17 @@ router.get("/dashboard/stats", async (req, res) => {
       Booking.findAll({
         where: {
           parkingId: pms.id,
+          paymentStatus: "Paid", // ONLY PAID BOOKINGS
           bookingStatus: { [Op.in]: ["Confirmed", "Checked-In"] },
           startTime: { [Op.lte]: now },
           endTime: { [Op.gte]: now }
         }
       }),
       Booking.findAll({
-        where: { parkingId: pms.id }
+        where: { 
+          parkingId: pms.id,
+          paymentStatus: "Paid" // ONLY PAID BOOKINGS
+        }
       })
     ]);
 
@@ -286,6 +290,7 @@ router.get("/availability", async (req, res) => {
     const overlappingBookings = await Booking.findAll({
       where: {
         parkingId: pms.id,
+        paymentStatus: "Paid", // ONLY PAID BOOKINGS
         bookingStatus: { [Op.in]: ["Confirmed", "Checked-In"] },
         startTime: { [Op.lt]: end },
         endTime: { [Op.gt]: start }
@@ -320,6 +325,7 @@ router.get("/slots", async (req, res) => {
     const activeBookings = await Booking.findAll({
       where: {
         parkingId: pms.id,
+        paymentStatus: "Paid", // ONLY PAID BOOKINGS
         bookingStatus: { [Op.in]: ["Confirmed", "Checked-In"] },
         startTime: { [Op.lte]: now },
         endTime: { [Op.gte]: now }
@@ -486,7 +492,10 @@ router.get("/bookings", async (req, res) => {
     if (!pms) return res.status(200).json([]);
 
     const bookings = await Booking.findAll({
-      where: { parkingId: pms.id },
+      where: { 
+        parkingId: pms.id,
+        paymentStatus: "Paid" // ONLY PAID BOOKINGS
+      },
       order: [["createdAt", "DESC"]]
     });
 

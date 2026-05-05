@@ -104,7 +104,9 @@ router.post("/book", async (req, res) => {
       slotNumber: null, // JIT Allocation will set this later
       startTime: bookingStart,
       endTime: bookingEnd,
-      totalAmount: Number((durationHours * Number(parking.pricePerHour || 0)).toFixed(2))
+      totalAmount: Number((durationHours * Number(parking.pricePerHour || 0)).toFixed(2)),
+      paymentStatus: "Pending",
+      bookingStatus: "Awaiting Payment"
     });
 
     return res.status(201).json({

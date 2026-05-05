@@ -189,6 +189,7 @@ router.post("/verify-payment", async (req, res) => {
     booking.razorpay_order_id = razorpay_order_id;
     booking.razorpay_payment_id = razorpay_payment_id;
     booking.paymentStatus = "Paid";
+    booking.bookingStatus = "Confirmed";
     await booking.save();
 
     // Fetch full booking details for WhatsApp message
