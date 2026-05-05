@@ -34,10 +34,39 @@ const startSlotAllocator = () => {
       for (const booking of pendingBookings) {
         await allocateAndNotify(booking);
       }
+
+      // 2. Send 15-minute "End of Booking" Reminders
+      const fifteenMinutesFromNow = new Date(now.getTime() + 15 * 60 * 1000);
+      const fourteenMinutesFromNow = new Date(now.getTime() + 14 * 60 * 1000);
+
+      const expiringBookings = await Booking.findAll({
+        where: {
+          bookingStatus: "Checked-In",
+          endTime: {
+            [Op.between]: [fourteenMinutesFromNow, fifteenMinutesFromNow]
+          }
+        },
+        include: [{ model: ParkingBusiness, as: "parking" }, { model: User, as: "user" }]
+      });
+
+      for (const booking of expiringBookings) {
+        await sendEndReminder(booking);
+      }
     } catch (err) {
       console.error("[JIT ERROR]:", err);
     }
   }, 60 * 1000); // 1 minute
+};
+
+const sendEndReminder = async (booking) => {
+  const { sendWhatsAppMessage } = require("./messagingService");
+  const phone = booking.user.phone || "";
+  const businessName = booking.parking.businessName;
+
+  const message = `⚠️ *ParkScope Reminder*\n\nYour booking at *${businessName}* will end in *15 minutes*.\n\n✅ *Want to stay longer?* Open the app to extend your time.\n🚪 *Ready to leave?* Please proceed to the exit to avoid overstay charges.`;
+
+  console.log(`[REMINDER] Sent to ${phone} for booking ${booking.id}`);
+  await sendWhatsAppMessage(phone, message);
 };
 
 const allocateAndNotify = async (booking) => {
