@@ -6,9 +6,15 @@ const { sendWhatsAppMessage } = require("../services/messagingService");
 
 const router = express.Router();
 
+const cleanEnvVar = (val) => {
+  if (!val) return "";
+  // Remove whitespace and any accidental quotes (common in Render/Vercel)
+  return val.trim().replace(/^["']|["']$/g, "");
+};
+
 const getRazorpayClient = () => {
-  const keyId = process.env.RAZORPAY_KEY_ID?.trim();
-  const keySecret = process.env.RAZORPAY_KEY_SECRET?.trim();
+  const keyId = cleanEnvVar(process.env.RAZORPAY_KEY_ID);
+  const keySecret = cleanEnvVar(process.env.RAZORPAY_KEY_SECRET);
 
   if (!keyId || !keySecret || keyId === "undefined" || keySecret === "undefined") {
     console.log("RAZORPAY CONFIG MISSING OR INVALID: Check environment variables");
@@ -16,7 +22,8 @@ const getRazorpayClient = () => {
   }
 
   try {
-    console.log("RAZORPAY CLIENT INITIALIZED with Key:", keyId);
+    // Log masked keys for debugging
+    console.log(`RAZORPAY INIT: Key starts with ${keyId.substring(0, 8)}... (Length: ${keyId.length})`);
     return new Razorpay({
       key_id: keyId,
       key_secret: keySecret
