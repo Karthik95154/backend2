@@ -248,6 +248,7 @@ router.get("/me/:id", async (req, res) => {
 });
 
 const { sendWhatsAppMessage } = require("../services/messagingService");
+const { sendEmail } = require("../services/emailService");
 
 router.post("/forgot-password", async (req, res) => {
   try {
@@ -282,12 +283,16 @@ router.post("/forgot-password", async (req, res) => {
     // Send via WhatsApp
     const message = `🔐 *ParkScope Password Reset*\n\nYour verification code is: *${otp}*\n\nThis code expires in 15 minutes. If you didn't request this, please ignore this message.`;
     
-    // Use the stored phone number
     await sendWhatsAppMessage(account.phone, message);
+
+    // Send via Email
+    const emailSubject = "ParkScope Password Reset Verification";
+    const emailBody = `Your verification code is: ${otp}\n\nThis code expires in 15 minutes.`;
+    await sendEmail(account.email, emailSubject, emailBody);
 
     return res.status(200).json({
       success: true,
-      message: `Verification code sent to ${account.phone} via WhatsApp`,
+      message: `Verification code sent to ${account.email} (Email) and ${account.phone} (WhatsApp)`,
       debug_otp: process.env.NODE_ENV === 'development' ? otp : undefined
     });
   } catch (err) {
