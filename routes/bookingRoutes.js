@@ -15,6 +15,7 @@ const isSlotAvailable = async (parkingId, startTime, endTime, totalSlots) => {
   const overlappingBookings = await Booking.findAll({
     where: {
       parkingId,
+      paymentStatus: "Paid", // ONLY PAID BOOKINGS
       bookingStatus: { [Op.in]: ACTIVE_BOOKING_STATUSES },
       startTime: { [Op.lt]: endTime },
       endTime: { [Op.gt]: startTime }

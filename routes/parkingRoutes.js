@@ -41,6 +41,7 @@ const getCurrentActiveCounts = async (parkingIds) => {
   const activeBookings = await Booking.findAll({
     where: {
       parkingId: { [Op.in]: parkingIds },
+      paymentStatus: "Paid", // ONLY PAID BOOKINGS
       bookingStatus: { [Op.in]: ACTIVE_BOOKING_STATUSES },
       startTime: { [Op.lte]: now },
       endTime: { [Op.gte]: now }
