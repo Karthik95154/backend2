@@ -26,6 +26,14 @@ module.exports = (sequelize) =>
         type: DataTypes.STRING,
         allowNull: false
       },
+      resetCode: {
+        type: DataTypes.STRING,
+        allowNull: true
+      },
+      resetExpiry: {
+        type: DataTypes.DATE,
+        allowNull: true
+      },
       vehicles: {
         type: DataTypes.JSON,
         defaultValue: [],

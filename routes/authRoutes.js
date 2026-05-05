@@ -247,4 +247,92 @@ router.get("/me/:id", async (req, res) => {
   }
 });
 
+const { sendWhatsAppMessage } = require("../services/messagingService");
+
+router.post("/forgot-password", async (req, res) => {
+  try {
+    let { email } = req.body;
+    email = normalizeEmail(email);
+
+    if (!email) {
+      return res.status(400).json({ success: false, message: "Email is required" });
+    }
+
+    // Check User
+    let account = await User.findOne({ where: { email } });
+    let type = "user";
+
+    if (!account) {
+      account = await ParkingBusiness.findOne({ where: { email } });
+      type = "business";
+    }
+
+    if (!account) {
+      return res.status(404).json({ success: false, message: "Account not found" });
+    }
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiry = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+
+    account.resetCode = otp;
+    account.resetExpiry = expiry;
+    await account.save();
+
+    // Send via WhatsApp
+    const message = `🔐 *ParkScope Password Reset*\n\nYour verification code is: *${otp}*\n\nThis code expires in 15 minutes. If you didn't request this, please ignore this message.`;
+    
+    // Use the stored phone number
+    await sendWhatsAppMessage(account.phone, message);
+
+    return res.status(200).json({
+      success: true,
+      message: `Verification code sent to ${account.phone} via WhatsApp`,
+      debug_otp: process.env.NODE_ENV === 'development' ? otp : undefined
+    });
+  } catch (err) {
+    console.error("FORGOT PASS ERROR:", err);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
+router.post("/reset-password", async (req, res) => {
+  try {
+    let { email, code, newPassword } = req.body;
+    email = normalizeEmail(email);
+
+    if (!email || !code || !newPassword) {
+      return res.status(400).json({ success: false, message: "Email, code, and newPassword are required" });
+    }
+
+    // Check User
+    let account = await User.findOne({ where: { email, resetCode: code } });
+    if (!account) {
+      account = await ParkingBusiness.findOne({ where: { email, resetCode: code } });
+    }
+
+    if (!account) {
+      return res.status(400).json({ success: false, message: "Invalid verification code" });
+    }
+
+    if (new Date() > new Date(account.resetExpiry)) {
+      return res.status(400).json({ success: false, message: "Code has expired" });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    account.password = hashedPassword;
+    account.resetCode = null;
+    account.resetExpiry = null;
+    await account.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Password reset successful. You can now login with your new password."
+    });
+  } catch (err) {
+    console.error("RESET PASS ERROR:", err);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
 module.exports = router;

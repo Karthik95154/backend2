@@ -57,6 +57,14 @@ module.exports = (sequelize) =>
       closingTime: {
         type: DataTypes.STRING,
         allowNull: false
+      },
+      resetCode: {
+        type: DataTypes.STRING,
+        allowNull: true
+      },
+      resetExpiry: {
+        type: DataTypes.DATE,
+        allowNull: true
       }
     },
     {
