@@ -229,18 +229,35 @@ router.get("/dashboard/stats", async (req, res) => {
       })
     ]);
 
-    const totalSlots = Number(pms.totalSlots || 0);
-    const occupiedCount = activeBookings.filter(b => b.bookingStatus === "Checked-In").length;
-    const reservedCount = activeBookings.filter(b => b.bookingStatus === "Confirmed").length;
     const revenue = allBookings
       .filter(b => b.paymentStatus === "Paid")
       .reduce((sum, b) => sum + Number(b.totalAmount || 0), 0);
 
+    const totalSlots = Number(pms.totalSlots || 0);
+    
+    // 1. Physically Occupied (Checked-In)
+    const occupiedCount = activeBookings.filter(b => b.bookingStatus === "Checked-In").length;
+    
+    // 2. Reserved & Assigned (Confirmed with a Slot Number)
+    // These are bookings in the 5-min JIT window or manually assigned
+    const reservedCount = activeBookings.filter(b => 
+      b.bookingStatus === "Confirmed" && b.slotNumber !== null
+    ).length;
+
+    // 3. Pending (Confirmed but NO Slot assigned yet)
+    // These do NOT decrease physical availability yet
+    const pendingCount = activeBookings.filter(b => 
+      b.bookingStatus === "Confirmed" && b.slotNumber === null
+    ).length;
+
+    const availableCount = Math.max(totalSlots - (occupiedCount + reservedCount), 0);
+
     return res.status(200).json({
       totalSlots,
       occupiedCount,
-      availableCount: Math.max(totalSlots - activeBookings.length, 0),
+      availableCount,
       reservedCount,
+      pendingCount,
       overstayCount: 0,
       revenue,
       zoneCount: 1, 
@@ -276,10 +293,13 @@ router.get("/availability", async (req, res) => {
     });
 
     // Return the list of occupied slots for the frontend to normalize
-    return res.json(overlappingBookings.map(b => ({
-      slotNumber: b.slotNumber,
-      status: b.bookingStatus === "Checked-In" ? "occupied" : "reserved"
-    })));
+    return res.json(overlappingBookings
+      .filter(b => b.slotNumber !== null)
+      .map(b => ({
+        slotNumber: b.slotNumber,
+        status: b.bookingStatus === "Checked-In" ? "occupied" : "reserved"
+      }))
+    );
   } catch (err) {
     console.error("AVAILABILITY ERROR:", err);
     return res.status(500).json([]);
