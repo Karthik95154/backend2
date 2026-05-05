@@ -54,6 +54,14 @@ module.exports = (sequelize) =>
       razorpay_payment_id: {
         type: DataTypes.STRING,
         allowNull: true
+      },
+      overstayAmount: {
+        type: DataTypes.FLOAT,
+        defaultValue: 0
+      },
+      overstayStatus: {
+        type: DataTypes.ENUM("None", "Pending", "Paid"),
+        defaultValue: "None"
       }
     },
     {

@@ -225,4 +225,73 @@ router.post("/verify-payment", async (req, res) => {
   }
 });
 
+router.post("/create-overstay-order", async (req, res) => {
+  try {
+    const { bookingId } = req.body;
+    if (!bookingId) return res.status(400).json({ success: false, message: "bookingId is required" });
+
+    const booking = await Booking.findByPk(bookingId);
+    if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
+
+    if (booking.overstayStatus !== "Pending" || booking.overstayAmount <= 0) {
+      return res.status(400).json({ success: false, message: "No pending overstay charge found for this booking" });
+    }
+
+    const razorpay = getRazorpayClient();
+    if (!razorpay) {
+      return res.status(500).json({ success: false, message: "Razorpay not configured" });
+    }
+
+    const order = await razorpay.orders.create({
+      amount: Math.round(Number(booking.overstayAmount) * 100),
+      currency: "INR",
+      receipt: `overstay_${booking.id}`
+    });
+
+    return res.status(200).json({
+      success: true,
+      order,
+      key: process.env.RAZORPAY_KEY_ID
+    });
+  } catch (err) {
+    console.error("OVERSTAY ORDER ERROR:", err);
+    return res.status(500).json({ success: false, message: `Overstay Order Error: ${err.message}` });
+  }
+});
+
+router.post("/verify-overstay-payment", async (req, res) => {
+  try {
+    const { bookingId, razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+
+    if (!bookingId || !razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      return res.status(400).json({ success: false, message: "Missing required fields" });
+    }
+
+    const secret = process.env.RAZORPAY_KEY_SECRET;
+    const expectedSignature = crypto
+      .createHmac("sha256", secret)
+      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+      .digest("hex");
+
+    if (expectedSignature !== razorpay_signature) {
+      return res.status(400).json({ success: false, message: "Invalid signature" });
+    }
+
+    const booking = await Booking.findByPk(bookingId);
+    if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
+
+    booking.overstayStatus = "Paid";
+    await booking.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Overstay payment verified successfully. You can now check out.",
+      booking
+    });
+  } catch (err) {
+    console.error("VERIFY OVERSTAY ERROR:", err);
+    return res.status(500).json({ success: false, message: `Verify Overstay Error: ${err.message}` });
+  }
+});
+
 module.exports = router;

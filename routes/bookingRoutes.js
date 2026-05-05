@@ -215,37 +215,58 @@ router.post("/check-in/:bookingId", async (req, res) => {
 
 router.post("/check-out/:bookingId", async (req, res) => {
   try {
-    const booking = await Booking.findByPk(req.params.bookingId);
+    const booking = await Booking.findByPk(req.params.bookingId, {
+      include: [{ model: ParkingBusiness, as: "parking" }]
+    });
 
     if (!booking) {
-      return res.status(404).json({
-        success: false,
-        message: "Booking not found"
-      });
+      return res.status(404).json({ success: false, message: "Booking not found" });
     }
 
     if (booking.bookingStatus !== "Checked-In") {
-      return res.status(400).json({
-        success: false,
-        message: "Booking cannot be checked out"
-      });
+      return res.status(400).json({ success: false, message: "Booking cannot be checked out" });
     }
 
+    const now = new Date();
+    const endTime = new Date(booking.endTime);
+    
+    // Calculate overstay if current time is 15 minutes past end time (grace period)
+    const gracePeriodMs = 15 * 60 * 1000;
+    if (now.getTime() > endTime.getTime() + gracePeriodMs) {
+      // If overstay detected and not paid
+      if (booking.overstayStatus !== "Paid") {
+        const overstayMs = now.getTime() - endTime.getTime();
+        const overstayHours = Math.ceil(overstayMs / (1000 * 60 * 60)); // Round up to nearest hour
+        const pricePerHour = Number(booking.parking?.pricePerHour || 40);
+        const amountToPay = overstayHours * pricePerHour;
+
+        booking.overstayAmount = amountToPay;
+        booking.overstayStatus = "Pending";
+        await booking.save();
+
+        return res.status(402).json({
+          success: false,
+          requiresOverstayPayment: true,
+          overstayHours,
+          amountToPay,
+          message: `You have overstayed by ${overstayHours} hour(s). Please pay Rs ${amountToPay} to check out.`
+        });
+      }
+    }
+
+    // Finalize check-out
     booking.bookingStatus = "Completed";
     await booking.save();
 
     return res.status(200).json({
       success: true,
-      message: "Check-out successful",
+      message: "Check-out successful. Have a safe journey!",
+      exitPass: `EXIT-${booking.id.substring(0, 8).toUpperCase()}`,
       booking
     });
   } catch (err) {
     console.error("CHECK-OUT ERROR:", err);
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      error: err.message
-    });
+    return res.status(500).json({ success: false, message: "Internal server error", error: err.message });
   }
 });
 
