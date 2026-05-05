@@ -144,7 +144,7 @@ router.post("/signup", async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: "Internal server error",
+      message: `PMS Register Error: ${err.message}`,
       error: err.message
     });
   }
@@ -188,7 +188,7 @@ router.post("/login", async (req, res) => {
     console.error("PMS LOGIN ERROR:", err);
     return res.status(500).json({
       success: false,
-      message: "Internal server error",
+      message: `PMS Login Error: ${err.message}`,
       error: err.message
     });
   }
@@ -248,7 +248,7 @@ router.get("/dashboard/stats", async (req, res) => {
     });
   } catch (err) {
     console.error("STATS ERROR:", err);
-    return res.status(500).json({ success: false, message: "Internal server error" });
+    return res.status(500).json({ success: false, message: `Stats Error: ${err.message}` });
   }
 });
 
@@ -323,7 +323,7 @@ router.get("/slots", async (req, res) => {
     return res.status(200).json(slots);
   } catch (err) {
     console.error("SLOTS ERROR:", err);
-    return res.status(500).json({ success: false, message: "Internal server error" });
+    return res.status(500).json({ success: false, message: `Slots Error: ${err.message}` });
   }
 });
 
@@ -372,7 +372,7 @@ router.patch("/slots/:id", async (req, res) => {
     return res.status(200).json({ success: true });
   } catch (err) {
     console.error("SLOT UPDATE ERROR:", err);
-    return res.status(500).json({ success: false, message: "Internal server error" });
+    return res.status(500).json({ success: false, message: `Slot Update Error: ${err.message}` });
   }
 });
 
@@ -393,7 +393,7 @@ router.get("/parking-zones", async (req, res) => {
     }]);
   } catch (err) {
     console.error("ZONES ERROR:", err);
-    return res.status(500).json({ success: false, message: "Internal server error" });
+    return res.status(500).json({ success: false, message: `Zones Error: ${err.message}` });
   }
 });
 
@@ -422,7 +422,7 @@ router.patch("/parking-zones/:id", async (req, res) => {
     });
   } catch (err) {
     console.error("ZONE UPDATE ERROR:", err);
-    return res.status(500).json({ success: false, message: "Internal server error" });
+    return res.status(500).json({ success: false, message: `Zone Update Error: ${err.message}` });
   }
 });
 
@@ -453,7 +453,7 @@ router.get("/payments", async (req, res) => {
     return res.status(200).json(payments);
   } catch (err) {
     console.error("PAYMENTS ERROR:", err);
-    return res.status(500).json({ success: false, message: "Internal server error" });
+    return res.status(500).json({ success: false, message: `Payments Error: ${err.message}` });
   }
 });
 
@@ -481,7 +481,7 @@ router.get("/bookings", async (req, res) => {
     })));
   } catch (err) {
     console.error("BOOKINGS ERROR:", err);
-    return res.status(500).json({ success: false, message: "Internal server error" });
+    return res.status(500).json({ success: false, message: `Bookings Error: ${err.message}` });
   }
 });
 
@@ -518,7 +518,7 @@ router.patch("/bookings/:id", async (req, res) => {
     return res.status(200).json({ success: true, booking });
   } catch (err) {
     console.error("BOOKING UPDATE ERROR:", err);
-    return res.status(500).json({ success: false, message: "Internal server error" });
+    return res.status(500).json({ success: false, message: `Booking Update Error: ${err.message}` });
   }
 });
 
@@ -534,7 +534,7 @@ router.get("/business/profile", async (req, res) => {
     return res.status(200).json(toSafePms(pms));
   } catch (err) {
     console.error("GET PROFILE ERROR:", err);
-    return res.status(500).json({ success: false, message: "Internal server error" });
+    return res.status(500).json({ success: false, message: `Profile Error: ${err.message}` });
   }
 });
 

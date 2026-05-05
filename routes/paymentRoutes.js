@@ -1,13 +1,14 @@
 const crypto = require("crypto");
 const express = require("express");
 const Razorpay = require("razorpay");
-const { Booking } = require("../models");
+const { Booking, ParkingBusiness } = require("../models");
+const { sendWhatsAppMessage } = require("../services/messagingService");
 
 const router = express.Router();
 
 const getRazorpayClient = () => {
-  const keyId = process.env.RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY;
-  const keySecret = process.env.RAZORPAY_KEY_SECRET || process.env.RAZORPAY_SECRET;
+  const keyId = process.env.RAZORPAY_KEY_ID;
+  const keySecret = process.env.RAZORPAY_KEY_SECRET;
 
   if (!keyId || !keySecret) {
     console.log("RAZORPAY CONFIG MISSING: No key or secret found in environment");
@@ -100,9 +101,36 @@ router.post("/create-order", async (req, res) => {
     });
   } catch (err) {
     console.error("CREATE ORDER ERROR:", err);
+    
+    if (process.env.ALLOW_MOCK_PAYMENTS === 'true') {
+      console.log("ERROR OCCURRED, FALLING BACK TO MOCK ORDER");
+      const booking = await Booking.findByPk(req.body.bookingId).catch(() => null);
+      
+      const mockOrder = {
+        id: `order_mock_err_${Date.now()}`,
+        amount: Math.round(Number(booking?.totalAmount || 10) * 100),
+        currency: "INR",
+        receipt: req.body.bookingId
+      };
+      
+      if (booking) {
+        booking.razorpay_order_id = mockOrder.id;
+        booking.paymentStatus = "Pending";
+        await booking.save().catch(() => null);
+      }
+
+      return res.status(200).json({
+        success: true,
+        order: mockOrder,
+        mock: true,
+        key: "rzp_test_mock_key",
+        message: "Fallback to mock due to Razorpay error: " + err.message
+      });
+    }
+
     return res.status(500).json({
       success: false,
-      message: "Internal server error",
+      message: `Create Order Error: ${err.message}`,
       error: err.message
     });
   }
@@ -166,16 +194,31 @@ router.post("/verify-payment", async (req, res) => {
     booking.paymentStatus = "Paid";
     await booking.save();
 
+    // Fetch full booking details for WhatsApp message
+    const bookingDetails = await Booking.findByPk(bookingId, {
+      include: [{ model: ParkingBusiness, as: "parking" }]
+    });
+
+    if (bookingDetails) {
+      const parkingName = bookingDetails.parking ? bookingDetails.parking.name : "Parking Lot";
+      const slotNumber = bookingDetails.slotNumber || "N/A";
+      const userPhone = "9515659738"; // User explicitly requested this number
+
+      const messageBody = `✅ Booking Confirmed!\n\nParking: ${parkingName}\nSlot Number: ${slotNumber}\nVehicle: ${bookingDetails.vehicleNumber}\nAmount: ₹${bookingDetails.totalAmount}\n\nThank you for using SmartPark AI!`;
+      
+      await sendWhatsAppMessage(userPhone, messageBody);
+    }
+
     return res.status(200).json({
       success: true,
-      message: "Payment verified successfully",
+      message: "Payment verified successfully and WhatsApp confirmation sent",
       booking
     });
   } catch (err) {
     console.error("VERIFY PAYMENT ERROR:", err);
     return res.status(500).json({
       success: false,
-      message: "Internal server error",
+      message: `Verify Payment Error: ${err.message}`,
       error: err.message
     });
   }

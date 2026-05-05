@@ -116,7 +116,7 @@ router.post("/book", async (req, res) => {
     console.error("CREATE BOOKING ERROR:", err);
     return res.status(500).json({
       success: false,
-      message: "Internal server error",
+      message: `Create Booking Error: ${err.message}`,
       error: err.message
     });
   }
@@ -161,7 +161,7 @@ router.get("/my-bookings/:userId", async (req, res) => {
     console.error("GET MY BOOKINGS ERROR:", err);
     return res.status(500).json({
       success: false,
-      message: "Internal server error",
+      message: `Fetch Bookings Error: ${err.message}`,
       error: err.message
     });
   }

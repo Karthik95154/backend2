@@ -35,7 +35,7 @@ router.post("/user/vehicles", async (req, res) => {
     return res.status(200).json({ success: true, vehicles: user.vehicles });
   } catch (err) {
     console.error("UPDATE VEHICLES ERROR:", err);
-    return res.status(500).json({ success: false, message: "Internal server error" });
+    return res.status(500).json({ success: false, message: `Register Error: ${err.message}` });
   }
 });
 
@@ -82,6 +82,7 @@ router.post("/login", async (req, res) => {
           ...toSafeUser(user)
         });
       }
+      return res.status(401).json({ success: false, message: "Incorrect password" });
     }
 
     // 2. Try PMS Login
@@ -95,12 +96,13 @@ router.post("/login", async (req, res) => {
           ...toSafePms(pms)
         });
       }
+      return res.status(401).json({ success: false, message: "Incorrect password" });
     }
 
-    return res.status(401).json({ success: false, message: "Invalid email or password" });
+    return res.status(404).json({ success: false, message: "Account not found" });
   } catch (err) {
     console.error("LOGIN ERROR:", err);
-    return res.status(500).json({ success: false, message: "Internal server error" });
+    return res.status(500).json({ success: false, message: `Login Error: ${err.message}` });
   }
 });
 
@@ -222,7 +224,7 @@ router.post("/signup", async (req, res) => {
     }
   } catch (err) {
     console.error("SIGNUP ERROR:", err);
-    return res.status(500).json({ success: false, message: "Internal server error", error: err.message });
+    return res.status(500).json({ success: false, message: `Update Profile Error: ${err.message}`, error: err.message });
   }
 });
 
@@ -241,7 +243,7 @@ router.get("/me/:id", async (req, res) => {
     return res.status(200).json({ success: true, ...toSafeUser(user) });
   } catch (err) {
     console.error("GET PROFILE ERROR:", err);
-    return res.status(500).json({ success: false, message: "Internal server error" });
+    return res.status(500).json({ success: false, message: `Change Password Error: ${err.message}` });
   }
 });
 
