@@ -64,42 +64,47 @@ const toSafePms = (pms) => ({
 // Unified Login
 router.post("/login", async (req, res) => {
   try {
-    let { email, password } = req.body;
+    const { password, role } = req.body;
+    let { email } = req.body;
     email = normalizeEmail(email);
 
     if (!email || !password) {
       return res.status(400).json({ success: false, message: "Email and password are required" });
     }
 
-    // 1. Try User Login
-    let user = await User.findOne({ where: { email } });
-    if (user) {
-      const match = await bcrypt.compare(password, user.password);
-      if (match) {
-        return res.status(200).json({
-          success: true,
-          message: "User login successful",
-          ...toSafeUser(user)
-        });
+    // 1. Try User Login (Only if role is 'user' or not specified)
+    if (!role || role === 'user') {
+      let user = await User.findOne({ where: { email } });
+      if (user) {
+        const match = await bcrypt.compare(password, user.password);
+        if (match) {
+          return res.status(200).json({
+            success: true,
+            message: "User login successful",
+            ...toSafeUser(user)
+          });
+        }
+        return res.status(401).json({ success: false, message: "Incorrect password" });
       }
-      return res.status(401).json({ success: false, message: "Incorrect password" });
     }
 
-    // 2. Try PMS Login
-    let pms = await ParkingBusiness.findOne({ where: { email } });
-    if (pms) {
-      const match = await bcrypt.compare(password, pms.password);
-      if (match) {
-        return res.status(200).json({
-          success: true,
-          message: "PMS login successful",
-          ...toSafePms(pms)
-        });
+    // 2. Try PMS Login (Only if role is 'admin' or not specified)
+    if (!role || role === 'admin') {
+      let pms = await ParkingBusiness.findOne({ where: { email } });
+      if (pms) {
+        const match = await bcrypt.compare(password, pms.password);
+        if (match) {
+          return res.status(200).json({
+            success: true,
+            message: "PMS login successful",
+            ...toSafePms(pms)
+          });
+        }
+        return res.status(401).json({ success: false, message: "Incorrect password" });
       }
-      return res.status(401).json({ success: false, message: "Incorrect password" });
     }
 
-    return res.status(404).json({ success: false, message: "Account not found" });
+    return res.status(404).json({ success: false, message: "Account not found for this role" });
   } catch (err) {
     console.error("LOGIN ERROR:", err);
     return res.status(500).json({ success: false, message: `Login Error: ${err.message}` });

@@ -22,11 +22,20 @@ const sendWhatsAppMessage = async (to, body) => {
     // Ensure 'to' is in whatsapp format
     const formattedTo = to.startsWith("whatsapp:") ? to : `whatsapp:+91${to.replace(/\D/g, "").slice(-10)}`;
     
-    const message = await client.messages.create({
+    const messageOptions = {
       from,
       to: formattedTo,
-      body,
-    });
+    };
+
+    // Use Content Template if SID is provided (Required for non-sandbox production)
+    if (process.env.TWILIO_CONTENT_SID) {
+      messageOptions.contentSid = process.env.TWILIO_CONTENT_SID;
+      messageOptions.contentVariables = JSON.stringify({ "1": body });
+    } else {
+      messageOptions.body = body;
+    }
+
+    const message = await client.messages.create(messageOptions);
 
     console.log(`[WhatsApp] Message sent successfully. SID: ${message.sid}`);
     return { success: true, sid: message.sid };
