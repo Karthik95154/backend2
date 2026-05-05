@@ -7,8 +7,8 @@ const { sendWhatsAppMessage } = require("../services/messagingService");
 const router = express.Router();
 
 const getRazorpayClient = () => {
-  const keyId = process.env.RAZORPAY_KEY_ID;
-  const keySecret = process.env.RAZORPAY_KEY_SECRET;
+  const keyId = process.env.RAZORPAY_KEY_ID?.trim();
+  const keySecret = process.env.RAZORPAY_KEY_SECRET?.trim();
 
   if (!keyId || !keySecret || keyId === "undefined" || keySecret === "undefined") {
     console.log("RAZORPAY CONFIG MISSING OR INVALID: Check environment variables");
