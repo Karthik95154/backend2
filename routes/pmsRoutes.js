@@ -562,15 +562,28 @@ router.get("/bookings", async (req, res) => {
       order: [["createdAt", "DESC"]]
     });
 
-    return res.status(200).json(bookings.map(b => ({
-      id: b.id,
-      user: b.userId, // Simplified
-      vehicle: b.vehicleNumber,
-      time: b.startTime,
-      status: b.bookingStatus === "Checked-In" ? "active" : (b.bookingStatus === "Confirmed" ? "booked" : "completed"),
-      assignedSlotId: `slot-${b.slotNumber}`,
-      amount: b.totalAmount
-    })));
+    return res.status(200).json(bookings.map(b => {
+      const date = new Date(b.startTime);
+      const formattedTime = date.toLocaleString('en-IN', {
+        timeZone: 'Asia/Kolkata',
+        day: '2-digit',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+
+      return {
+        id: b.id,
+        user: b.userId,
+        vehicle: b.vehicleNumber,
+        time: b.startTime,
+        formattedTime: formattedTime,
+        status: b.bookingStatus === "Checked-In" ? "active" : (b.bookingStatus === "Confirmed" ? "booked" : "completed"),
+        assignedSlotId: b.slotNumber ? `slot-${b.slotNumber}` : "Pending assignment",
+        amount: b.totalAmount
+      };
+    }));
   } catch (err) {
     console.error("BOOKINGS ERROR:", err);
     return res.status(500).json({ success: false, message: `Bookings Error: ${err.message}` });
