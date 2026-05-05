@@ -106,7 +106,7 @@ router.post("/book", async (req, res) => {
       endTime: bookingEnd,
       totalAmount: Number((durationHours * Number(parking.pricePerHour || 0)).toFixed(2)),
       paymentStatus: "Pending",
-      bookingStatus: "Awaiting Payment"
+      bookingStatus: "Confirmed"
     });
 
     return res.status(201).json({
