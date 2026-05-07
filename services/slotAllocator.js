@@ -29,9 +29,18 @@ const startSlotAllocator = () => {
 
       if (pendingBookings.length > 0) {
         console.log(`[JIT] Found ${pendingBookings.length} bookings needing allocation.`);
+      } else {
+        // Heartbeat log every 10 runs (~5 mins)
+        if (Math.random() < 0.1) console.log("[JIT] Heartbeat: Service active and scanning...");
       }
 
       for (const booking of pendingBookings) {
+        if (!booking.user || !booking.user.phone) {
+          console.warn(`[JIT WARN] Cannot notify for booking ${booking.id}: User phone missing.`);
+          // Still allocate even if we can't notify
+          await allocateAndNotify(booking);
+          continue;
+        }
         await allocateAndNotify(booking);
       }
 
@@ -55,7 +64,7 @@ const startSlotAllocator = () => {
     } catch (err) {
       console.error("[JIT ERROR]:", err);
     }
-  }, 60 * 1000); // 1 minute
+  }, 30 * 1000); // 30 seconds
 };
 
 const sendEndReminder = async (booking) => {

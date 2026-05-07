@@ -110,6 +110,16 @@ router.post("/book", async (req, res) => {
       bookingStatus: "Confirmed"
     });
 
+    // Send Instant Confirmation (without slot)
+    try {
+      const { sendWhatsAppMessage } = require("../services/messagingService");
+      const startTimeStr = bookingStart.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+      const confirmMsg = `✅ *Booking Confirmed!*\n\nYour spot at *${parking.businessName}* is booked for *${startTimeStr}*.\n\n🅿️ *Slot Assignment:* You will receive your specific slot number 5 minutes before your arrival.\n\nThank you for using ParkScope!`;
+      await sendWhatsAppMessage(user.phone, confirmMsg);
+    } catch (msgErr) {
+      console.log("Initial WhatsApp failed, but booking created:", msgErr.message);
+    }
+
     return res.status(201).json({
       success: true,
       message: "Booking created successfully",

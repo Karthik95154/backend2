@@ -37,22 +37,33 @@ const getCurrentActiveCounts = async (parkingIds) => {
     return {};
   }
 
-  const now = new Date();
   const activeBookings = await Booking.findAll({
     where: {
       parkingId: { [Op.in]: parkingIds },
-      paymentStatus: "Paid", // ONLY PAID BOOKINGS
-      bookingStatus: { [Op.in]: ACTIVE_BOOKING_STATUSES },
-      startTime: { [Op.lte]: now },
-      endTime: { [Op.gte]: now }
+      paymentStatus: "Paid",
+      bookingStatus: { [Op.in]: ["Confirmed", "Checked-In"] },
+      slotNumber: { [Op.ne]: null } // Only count if specifically assigned to a slot
     },
-    attributes: ["parkingId"]
+    attributes: ["parkingId", "bookingStatus", "startTime", "endTime"]
   });
 
-  return activeBookings.reduce((acc, booking) => {
-    acc[booking.parkingId] = (acc[booking.parkingId] || 0) + 1;
-    return acc;
-  }, {});
+  const now = new Date();
+  const counts = {};
+  
+  activeBookings.forEach(booking => {
+    // A booking is "Live" if it's Checked-In OR if it's Confirmed and currently within time
+    const isLive = booking.bookingStatus === "Checked-In" || (
+      booking.bookingStatus === "Confirmed" && 
+      new Date(booking.startTime) <= now && 
+      new Date(booking.endTime) >= now
+    );
+
+    if (isLive) {
+      counts[booking.parkingId] = (counts[booking.parkingId] || 0) + 1;
+    }
+  });
+
+  return counts;
 };
 
 router.get("/parking", async (req, res) => {

@@ -114,4 +114,36 @@ router.post("/login", async (req, res) => {
   }
 });
 
+router.put("/update/:id", async (req, res) => {
+  try {
+    const { name, phone } = req.body;
+    const user = await User.findByPk(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    if (name) user.name = String(name).trim();
+    if (phone) user.phone = String(phone).trim();
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      user: toSafeUser(user)
+    });
+  } catch (err) {
+    console.error("UPDATE USER ERROR:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: err.message
+    });
+  }
+});
+
 module.exports = router;

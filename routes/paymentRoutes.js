@@ -2,7 +2,7 @@ const crypto = require("crypto");
 const express = require("express");
 const Razorpay = require("razorpay");
 require("dotenv").config(); // Ensure env is loaded in this module
-const { Booking, ParkingBusiness } = require("../models");
+const { Booking, ParkingBusiness, User } = require("../models");
 const { sendWhatsAppMessage } = require("../services/messagingService");
 
 const router = express.Router();
@@ -201,13 +201,16 @@ router.post("/verify-payment", async (req, res) => {
     });
 
     if (bookingDetails) {
-      const parkingName = bookingDetails.parking ? bookingDetails.parking.name : "Parking Lot";
-      const slotNumber = bookingDetails.slotNumber || "N/A";
-      const userPhone = "9515659738"; // User explicitly requested this number
+      const parkingName = bookingDetails.parking ? (bookingDetails.parking.businessName || bookingDetails.parking.name) : "Parking Lot";
+      // Fetch user to get correct phone number
+      const user = await User.findByPk(bookingDetails.userId);
+      const userPhone = user ? user.phone : "";
 
-      const messageBody = `✅ Booking Confirmed!\n\nParking: ${parkingName}\nSlot Number: ${slotNumber}\nVehicle: ${bookingDetails.vehicleNumber}\nAmount: ₹${bookingDetails.totalAmount}\n\nThank you for using SmartPark AI!`;
+      const messageBody = `✅ *Payment Successful!*\n\nYour booking at *${parkingName}* is confirmed.\n\n🅿️ *Slot Assignment:* To ensure you get the best available spot, your specific slot number will be sent to you *5 minutes before* your booking starts.\n\nThank you for using ParkScope!`;
       
-      await sendWhatsAppMessage(userPhone, messageBody);
+      if (userPhone) {
+        await sendWhatsAppMessage(userPhone, messageBody);
+      }
     }
 
     return res.status(200).json({
