@@ -180,6 +180,33 @@ router.get("/my-bookings/:userId", async (req, res) => {
   }
 });
 
+router.get("/booking/:bookingId", async (req, res) => {
+  try {
+    const booking = await Booking.findByPk(req.params.bookingId, {
+      include: [
+        {
+          model: ParkingBusiness,
+          as: "parking",
+          attributes: ["id", "businessName", "address", "pricePerHour"]
+        }
+      ]
+    });
+
+    if (!booking) {
+      return res.status(404).json({ success: false, message: "Booking not found" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      ...booking.toJSON(),
+      parkingName: booking.parking?.businessName
+    });
+  } catch (err) {
+    console.error("GET BOOKING ERROR:", err);
+    return res.status(500).json({ success: false, message: `Fetch Booking Error: ${err.message}` });
+  }
+});
+
 router.post("/check-in/:bookingId", async (req, res) => {
   try {
     const booking = await Booking.findByPk(req.params.bookingId);
