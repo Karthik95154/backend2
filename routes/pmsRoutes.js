@@ -375,18 +375,46 @@ router.patch("/slots/:id", async (req, res) => {
     if (!pms) return res.status(404).json({ success: false, message: "Business not found" });
 
     if (status === "free") {
-      // End any active booking for this slot
-      await Booking.update(
-        { bookingStatus: "Completed" },
-        {
-          where: {
-            parkingId: pms.id,
-            slotNumber: slotNumber,
-            bookingStatus: { [Op.in]: ["Confirmed", "Checked-In"] }
+      // Find the active booking for this slot
+      const booking = await Booking.findOne({
+        where: {
+          parkingId: pms.id,
+          slotNumber: slotNumber,
+          bookingStatus: { [Op.in]: ["Confirmed", "Checked-In"] }
+        }
+      });
+
+      if (booking) {
+        // Check for overstay
+        const now = new Date();
+        const endTime = new Date(booking.endTime);
+        const gracePeriodMs = 15 * 60 * 1000;
+
+        if (now.getTime() > endTime.getTime() + gracePeriodMs) {
+          if (booking.overstayStatus !== "Paid") {
+            const overstayMs = now.getTime() - endTime.getTime();
+            const overstayHours = Math.ceil(overstayMs / (1000 * 60 * 60));
+            const amountToPay = overstayHours * Number(pms.pricePerHour || 40);
+
+            booking.overstayAmount = amountToPay;
+            booking.overstayStatus = "Pending";
+            await booking.save();
+
+            return res.status(402).json({
+              success: false,
+              requiresOverstayPayment: true,
+              overstayHours,
+              amountToPay,
+              message: `User in Slot ${slotNumber} has overstayed by ${overstayHours} hour(s). Payment of Rs ${amountToPay} is required.`
+            });
           }
         }
-      );
-    } else if (status === "occupied") {
+        
+        booking.bookingStatus = "Completed";
+        await booking.save();
+      }
+    }
+ else if (status === "occupied") {
       // Find a valid user to associate with this manual booking
       const user = await User.findOne();
       if (!user) return res.status(400).json({ success: false, message: "No users found in database to link booking" });
@@ -608,7 +636,37 @@ router.patch("/bookings/:id", async (req, res) => {
     // Map PMS status to Backend status
     let newStatus = booking.bookingStatus;
     if (status === "active") newStatus = "Checked-In";
-    if (status === "completed") newStatus = "Completed";
+    if (status === "completed") {
+      // Check for overstay before completing
+      const now = new Date();
+      const endTime = new Date(booking.endTime);
+      const gracePeriodMs = 15 * 60 * 1000;
+
+      if (now.getTime() > endTime.getTime() + gracePeriodMs) {
+        if (booking.overstayStatus !== "Paid") {
+          const overstayMs = now.getTime() - endTime.getTime();
+          const overstayHours = Math.ceil(overstayMs / (1000 * 60 * 60));
+          
+          // Get price per hour from the business
+          const pms = await ParkingBusiness.findByPk(booking.parkingId);
+          const pricePerHour = Number(pms?.pricePerHour || 40);
+          const amountToPay = overstayHours * pricePerHour;
+
+          booking.overstayAmount = amountToPay;
+          booking.overstayStatus = "Pending";
+          await booking.save();
+
+          return res.status(402).json({
+            success: false,
+            requiresOverstayPayment: true,
+            overstayHours,
+            amountToPay,
+            message: `User has overstayed by ${overstayHours} hour(s). Payment of Rs ${amountToPay} is required.`
+          });
+        }
+      }
+      newStatus = "Completed";
+    }
     if (status === "cancelled") newStatus = "Cancelled";
     if (status === "assigned") newStatus = "Confirmed";
 
