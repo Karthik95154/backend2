@@ -337,7 +337,10 @@ router.get("/slots", async (req, res) => {
     const activeBookings = await Booking.findAll({
       where: {
         parkingId: pms.id,
-        paymentStatus: "Paid",
+        [Op.or]: [
+          { paymentStatus: "Paid" },
+          { bookingStatus: "Checked-In" } // Physically present even if payment pending (manual)
+        ],
         bookingStatus: { [Op.in]: ["Confirmed", "Checked-In"] }
       }
     });
@@ -375,6 +378,8 @@ router.patch("/slots/:id", async (req, res) => {
     if (!pms) return res.status(404).json({ success: false, message: "Business not found" });
 
     if (status === "free") {
+      const { allowManualCompletion } = req.body;
+      
       // Find the active booking for this slot
       const booking = await Booking.findOne({
         where: {
@@ -389,28 +394,35 @@ router.patch("/slots/:id", async (req, res) => {
         const now = new Date();
         const endTime = new Date(booking.endTime);
         const gracePeriodMs = 15 * 60 * 1000;
+        
+        let overstayAmount = 0;
+        let overstayHours = 0;
 
         if (now.getTime() > endTime.getTime() + gracePeriodMs) {
-          if (booking.overstayStatus !== "Paid") {
-            const overstayMs = now.getTime() - endTime.getTime();
-            const overstayHours = Math.ceil(overstayMs / (1000 * 60 * 60));
-            const amountToPay = overstayHours * Number(pms.pricePerHour || 40);
+          const overstayMs = now.getTime() - endTime.getTime();
+          overstayHours = Math.ceil(overstayMs / (1000 * 60 * 60));
+          overstayAmount = overstayHours * Number(pms.pricePerHour || 40);
+          
+          booking.overstayAmount = overstayAmount;
+          booking.overstayStatus = "Pending";
+        }
 
-            booking.overstayAmount = amountToPay;
-            booking.overstayStatus = "Pending";
-            await booking.save();
+        const totalToPay = (booking.paymentStatus === "Pending" ? Number(booking.totalAmount || 0) : 0) + overstayAmount;
 
-            return res.status(402).json({
-              success: false,
-              requiresOverstayPayment: true,
-              overstayHours,
-              amountToPay,
-              message: `User in Slot ${slotNumber} has overstayed by ${overstayHours} hour(s). Payment of Rs ${amountToPay} is required.`
-            });
-          }
+        if (totalToPay > 0 && !allowManualCompletion) {
+          await booking.save();
+          return res.status(402).json({
+            success: false,
+            requiresOverstayPayment: true,
+            overstayHours,
+            amountToPay: totalToPay,
+            message: `Payment of Rs ${totalToPay.toFixed(2)} is required to free this slot.${overstayAmount > 0 ? ` (Includes Rs ${overstayAmount} overstay fee)` : ""}`
+          });
         }
         
         booking.bookingStatus = "Completed";
+        booking.paymentStatus = "Paid";
+        booking.overstayStatus = overstayAmount > 0 ? "Paid" : booking.overstayStatus;
         await booking.save();
       }
     }
@@ -428,7 +440,7 @@ router.patch("/slots/:id", async (req, res) => {
         startTime: new Date(),
         endTime: new Date(Date.now() + 3600000), // 1 hour default
         bookingStatus: "Checked-In",
-        paymentStatus: "Paid",
+        paymentStatus: "Pending", // Collect at exit
         totalAmount: pms.pricePerHour
       });
     }
@@ -557,7 +569,7 @@ router.post("/bookings", async (req, res) => {
       startTime: start,
       endTime: end,
       bookingStatus: "Checked-In",
-      paymentStatus: "Paid",
+      paymentStatus: "Pending", // Collect at exit
       totalAmount: amount
     });
 
@@ -637,34 +649,43 @@ router.patch("/bookings/:id", async (req, res) => {
     let newStatus = booking.bookingStatus;
     if (status === "active") newStatus = "Checked-In";
     if (status === "completed") {
-      // Check for overstay before completing
+      const { allowManualCompletion } = req.body;
+      
+      // Check for overstay or pending payment
       const now = new Date();
       const endTime = new Date(booking.endTime);
       const gracePeriodMs = 15 * 60 * 1000;
 
+      let overstayAmount = 0;
+      let overstayHours = 0;
+
       if (now.getTime() > endTime.getTime() + gracePeriodMs) {
-        if (booking.overstayStatus !== "Paid") {
-          const overstayMs = now.getTime() - endTime.getTime();
-          const overstayHours = Math.ceil(overstayMs / (1000 * 60 * 60));
-          
-          // Get price per hour from the business
-          const pms = await ParkingBusiness.findByPk(booking.parkingId);
-          const pricePerHour = Number(pms?.pricePerHour || 40);
-          const amountToPay = overstayHours * pricePerHour;
+        const overstayMs = now.getTime() - endTime.getTime();
+        overstayHours = Math.ceil(overstayMs / (1000 * 60 * 60));
+        
+        const pms = await ParkingBusiness.findByPk(booking.parkingId);
+        const pricePerHour = Number(pms?.pricePerHour || 40);
+        overstayAmount = overstayHours * pricePerHour;
 
-          booking.overstayAmount = amountToPay;
-          booking.overstayStatus = "Pending";
-          await booking.save();
-
-          return res.status(402).json({
-            success: false,
-            requiresOverstayPayment: true,
-            overstayHours,
-            amountToPay,
-            message: `User has overstayed by ${overstayHours} hour(s). Payment of Rs ${amountToPay} is required.`
-          });
-        }
+        booking.overstayAmount = overstayAmount;
+        booking.overstayStatus = "Pending";
       }
+
+      const totalToPay = (booking.paymentStatus === "Pending" ? Number(booking.totalAmount || 0) : 0) + overstayAmount;
+
+      if (totalToPay > 0 && !allowManualCompletion) {
+        await booking.save();
+        return res.status(402).json({
+          success: false,
+          requiresOverstayPayment: true,
+          overstayHours,
+          amountToPay: totalToPay,
+          message: `Payment of Rs ${totalToPay.toFixed(2)} is required to complete this session.${overstayAmount > 0 ? ` (Includes Rs ${overstayAmount} overstay fee)` : ""}`
+        });
+      }
+
+      booking.paymentStatus = "Paid";
+      booking.overstayStatus = overstayAmount > 0 ? "Paid" : booking.overstayStatus;
       newStatus = "Completed";
     }
     if (status === "cancelled") newStatus = "Cancelled";
