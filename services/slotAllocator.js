@@ -1,5 +1,5 @@
 const { Op } = require("sequelize");
-const { Booking, ParkingBusiness, User } = require("../models");
+const { Booking, ParkingBusiness, User, Notification } = require("../models");
 
 /**
  * Background task to allocate slots for bookings that are starting soon.
@@ -109,6 +109,18 @@ const allocateAndNotify = async (booking) => {
       await booking.save();
 
       console.log(`[JIT SUCCESS] Allocated Slot ${allocatedSlot} for Booking ${booking.id}`);
+
+      // Create App Notification
+      try {
+        await Notification.create({
+          userId: booking.userId,
+          title: "Slot Allocated! 🚗",
+          message: `Your spot at ${parking.businessName} is ready. Please park in Slot #${allocatedSlot}.`,
+          type: "Allocation"
+        });
+      } catch (noteErr) {
+        console.error("[JIT NOTE ERROR]:", noteErr.message);
+      }
 
       // Send WhatsApp Notification (Mock)
       await sendWhatsAppNotification(booking, allocatedSlot);

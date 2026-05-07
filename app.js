@@ -8,6 +8,7 @@ const parkingRoutes = require("./routes/parkingRoutes");
 const bookingRoutes = require("./routes/bookingRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const authRoutes = require("./routes/authRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
 const { generalLimiter, authLimiter } = require("./middleware/rateLimiter");
 
 
@@ -45,6 +46,7 @@ app.use("/api/slots", pmsRoutes);
 app.use("/api", parkingRoutes);
 app.use("/api", bookingRoutes);
 app.use("/api", paymentRoutes);
+app.use("/api", notificationRoutes);
 
 app.use((req, res) => {
   res.status(404).json({

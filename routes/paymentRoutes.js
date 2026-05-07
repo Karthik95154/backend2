@@ -2,7 +2,7 @@ const crypto = require("crypto");
 const express = require("express");
 const Razorpay = require("razorpay");
 require("dotenv").config(); // Ensure env is loaded in this module
-const { Booking, ParkingBusiness, User } = require("../models");
+const { Booking, ParkingBusiness, User, Notification } = require("../models");
 const { sendWhatsAppMessage } = require("../services/messagingService");
 
 const router = express.Router();
@@ -210,6 +210,18 @@ router.post("/verify-payment", async (req, res) => {
       
       if (userPhone) {
         await sendWhatsAppMessage(userPhone, messageBody);
+      }
+
+      // Create App Notification
+      try {
+        await Notification.create({
+          userId: booking.userId,
+          title: "Payment Successful! ✅",
+          message: `Your booking at ${parkingName} is confirmed. We will assign your slot 5 mins before you arrive.`,
+          type: "Payment"
+        });
+      } catch (noteErr) {
+        console.error("[PAYMENT NOTE ERROR]:", noteErr.message);
       }
     }
 
