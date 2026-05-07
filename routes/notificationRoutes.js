@@ -36,4 +36,19 @@ router.post("/notifications/read-all/:userId", async (req, res) => {
   }
 });
 
+// TEST ROUTE: Trigger a manual notification
+router.get("/notifications/test-trigger/:userId", async (req, res) => {
+  try {
+    const notification = await Notification.create({
+      userId: req.params.userId,
+      title: "Test Notification 🔔",
+      message: "This is a test notification to verify the system is working!",
+      type: "General"
+    });
+    return res.status(200).json({ success: true, notification });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 module.exports = router;
