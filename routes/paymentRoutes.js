@@ -206,10 +206,15 @@ router.post("/verify-payment", async (req, res) => {
       const user = await User.findByPk(bookingDetails.userId);
       const userPhone = user ? user.phone : "";
 
-      const messageBody = `✅ *Payment Successful!*\n\nYour booking at *${parkingName}* is confirmed.\n\n🅿️ *Slot Assignment:* To ensure you get the best available spot, your specific slot number will be sent to you *5 minutes before* your booking starts.\n\nThank you for using ParkScope!`;
-      
+      // Send WhatsApp Notification (Twilio Sandbox)
       if (userPhone) {
-        await sendWhatsAppMessage(userPhone, messageBody);
+        try {
+          const { sendWhatsAppNotification } = require("../services/whatsappService");
+          const payMsg = `🚗 *Smart Parking Update*\n\n✅ *Payment Successful!*\n\nYour booking at *${parkingName}* has been confirmed.\n\n🅿️ *Slot Assignment:* Your specific slot number will be sent to you *5 minutes* before your arrival.\n\nThank you for choosing SmartPark!`;
+          await sendWhatsAppNotification(userPhone, payMsg);
+        } catch (msgErr) {
+          console.error("[WhatsApp Service] Payment notification failed:", msgErr.message);
+        }
       }
 
       // Create App Notification

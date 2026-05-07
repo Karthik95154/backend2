@@ -122,8 +122,14 @@ const allocateAndNotify = async (booking) => {
         console.error("[JIT NOTE ERROR]:", noteErr.message);
       }
 
-      // Send WhatsApp Notification (Mock)
-      await sendWhatsAppNotification(booking, allocatedSlot);
+      // Send WhatsApp Notification (Twilio Sandbox)
+      try {
+        const { sendWhatsAppNotification } = require("./whatsappService");
+        const slotMsg = `🚗 *Smart Parking Update*\n\nYour parking slot has been assigned successfully.\n\nSlot Number: *${allocatedSlot}*\nFloor: *Ground Floor*\n\nPlease proceed to the parking area.`;
+        await sendWhatsAppNotification(booking.user.phone, slotMsg);
+      } catch (msgErr) {
+        console.error("[WhatsApp Service] JIT Allocation notification failed:", msgErr.message);
+      }
     } else {
       console.warn(`[JIT FAILED] No slots available for booking ${booking.id} at ${parking.businessName}`);
     }
@@ -132,23 +138,5 @@ const allocateAndNotify = async (booking) => {
   }
 };
 
-const sendWhatsAppNotification = async (booking, slotNumber) => {
-  const { sendWhatsAppMessage } = require("./messagingService");
-  const phone = booking.user.phone || "";
-  const businessName = booking.parking.businessName;
-  
-  // Format time for IST
-  const startTime = new Date(booking.startTime).toLocaleTimeString('en-IN', { 
-    timeZone: 'Asia/Kolkata',
-    hour: '2-digit', 
-    minute: '2-digit',
-    hour12: true 
-  });
-
-  const message = `🚗 *ParkScope Allocation*\n\nYour booking at *${businessName}* is starting soon!\n\n📍 *Slot:* #${slotNumber}\n🕒 *Start Time:* ${startTime}\n🚘 *Vehicle:* ${booking.vehicleNumber}\n\nPlease arrive on time. Thank you!`;
-
-  console.log(`[JIT NOTIFY] Queuing message for Slot ${slotNumber} to ${phone}`);
-  await sendWhatsAppMessage(phone, message);
-};
 
 module.exports = { startSlotAllocator };
