@@ -210,7 +210,15 @@ router.post("/verify-payment", async (req, res) => {
       if (userPhone) {
         try {
           const { sendWhatsAppNotification } = require("../services/whatsappService");
-          const payMsg = `🚗 *Smart Parking Update*\n\n✅ *Payment Successful!*\n\nYour booking at *${parkingName}* has been confirmed.\n\n🅿️ *Slot Assignment:* Your specific slot number will be sent to you *5 minutes* before your arrival.\n\nThank you for choosing SmartPark!`;
+          const startTime = new Date(bookingDetails.startTime);
+          const startTimeStr = startTime.toLocaleTimeString('en-IN', {
+            timeZone: 'Asia/Kolkata',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+          });
+
+          const payMsg = `🚗 *Smart Parking Update*\n\n✅ *Payment Successful!*\n\nYour booking at *${parkingName}* for *${startTimeStr}* has been confirmed.\n\n🅿️ *Slot Assignment:* Your specific slot number will be sent to you *5 minutes* before your arrival.\n\nThank you for choosing SmartPark!`;
           await sendWhatsAppNotification(userPhone, payMsg);
         } catch (msgErr) {
           console.error("[WhatsApp Service] Payment notification failed:", msgErr.message);
@@ -279,7 +287,7 @@ router.post("/create-overstay-order", async (req, res) => {
     const order = await razorpay.orders.create({
       amount: Math.round(Number(booking.overstayAmount) * 100),
       currency: "INR",
-      receipt: `overstay_${booking.id}`
+      receipt: `os_${booking.id.substring(0, 30)}`
     });
 
     return res.status(200).json({

@@ -110,15 +110,6 @@ router.post("/book", async (req, res) => {
       bookingStatus: "Confirmed"
     });
 
-    // Send Instant Confirmation (without slot) via Twilio WhatsApp
-    try {
-      const { sendWhatsAppNotification } = require("../services/whatsappService");
-      const startTimeStr = bookingStart.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
-      const confirmMsg = `🚗 *Smart Parking Update*\n\nYour booking at *${parking.businessName}* has been confirmed for *${startTimeStr}*.\n\n🅿️ *Slot Assignment:* To ensure the best spot, your slot number will be assigned 5 minutes before you arrive.\n\nPlease keep this message for reference.`;
-      await sendWhatsAppNotification(user.phone, confirmMsg);
-    } catch (msgErr) {
-      console.log("[WhatsApp Integration] Initial message failed:", msgErr.message);
-    }
 
     return res.status(201).json({
       success: true,

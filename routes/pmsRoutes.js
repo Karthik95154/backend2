@@ -404,7 +404,7 @@ router.patch("/slots/:id", async (req, res) => {
         let overstayAmount = 0;
         let overstayHours = 0;
 
-        if (now.getTime() > endTime.getTime() + gracePeriodMs) {
+        if (now.getTime() > endTime.getTime() + gracePeriodMs && booking.overstayStatus !== "Paid") {
           const overstayMs = now.getTime() - endTime.getTime();
           overstayHours = Math.ceil(overstayMs / (1000 * 60 * 60));
           overstayAmount = overstayHours * Number(pms.pricePerHour || 40);
