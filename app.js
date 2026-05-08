@@ -10,6 +10,7 @@ const paymentRoutes = require("./routes/paymentRoutes");
 const authRoutes = require("./routes/authRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const { generalLimiter, authLimiter } = require("./middleware/rateLimiter");
+const { verifyToken } = require("./middleware/authMiddleware");
 
 
 const app = express();
@@ -40,13 +41,13 @@ app.get("/", (req, res) => {
 app.use("/api/auth", authLimiter, authRoutes);
 
 
-// Other routes flattened to /api
-app.use("/api", pmsRoutes);
-app.use("/api/slots", pmsRoutes);
-app.use("/api", parkingRoutes);
-app.use("/api", bookingRoutes);
-app.use("/api", paymentRoutes);
-app.use("/api", notificationRoutes);
+// Other routes flattened to /api (Protected by JWT)
+app.use("/api", verifyToken, pmsRoutes);
+app.use("/api/slots", verifyToken, pmsRoutes);
+app.use("/api", verifyToken, parkingRoutes);
+app.use("/api", verifyToken, bookingRoutes);
+app.use("/api", verifyToken, paymentRoutes);
+app.use("/api", verifyToken, notificationRoutes);
 
 app.use((req, res) => {
   res.status(404).json({

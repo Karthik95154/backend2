@@ -1,8 +1,15 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 const { User, ParkingBusiness } = require("../models");
 
 const router = express.Router();
+
+const JWT_SECRET = process.env.JWT_SECRET || "smartpark_secret_key_2024";
+
+const generateToken = (payload) => {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: "30d" });
+};
 
 const normalizeEmail = (email) =>
   typeof email === "string" ? email.trim().toLowerCase() : "";
@@ -78,10 +85,13 @@ router.post("/login", async (req, res) => {
       if (user) {
         const match = await bcrypt.compare(password, user.password);
         if (match) {
+          const userData = toSafeUser(user);
+          const token = generateToken({ id: user.id, email: user.email, role: "user" });
           return res.status(200).json({
             success: true,
             message: "User login successful",
-            ...toSafeUser(user)
+            token,
+            ...userData
           });
         }
         return res.status(401).json({ success: false, message: "Incorrect password" });
@@ -94,10 +104,13 @@ router.post("/login", async (req, res) => {
       if (pms) {
         const match = await bcrypt.compare(password, pms.password);
         if (match) {
+          const pmsData = toSafePms(pms);
+          const token = generateToken({ id: pms.id, email: pms.email, role: "admin" });
           return res.status(200).json({
             success: true,
             message: "PMS login successful",
-            ...toSafePms(pms)
+            token,
+            ...pmsData
           });
         }
         return res.status(401).json({ success: false, message: "Incorrect password" });
@@ -196,10 +209,14 @@ router.post("/signup", async (req, res) => {
         closingTime: String(closingTime).trim()
       });
 
+      const pmsData = toSafePms(pms);
+      const token = generateToken({ id: pms.id, email: pms.email, role: "admin" });
+
       return res.status(201).json({
         success: true,
         message: "PMS registration successful",
-        ...toSafePms(pms)
+        token,
+        ...pmsData
       });
     } else {
       // --- REGULAR USER SIGNUP LOGIC ---
@@ -221,10 +238,14 @@ router.post("/signup", async (req, res) => {
         password: hashedPassword
       });
 
+      const userData = toSafeUser(user);
+      const token = generateToken({ id: user.id, email: user.email, role: "user" });
+
       return res.status(201).json({
         success: true,
         message: "User signup successful",
-        ...toSafeUser(user)
+        token,
+        ...userData
       });
     }
   } catch (err) {
