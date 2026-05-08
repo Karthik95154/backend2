@@ -112,10 +112,11 @@ const allocateAndNotify = async (booking) => {
 
       // Create App Notification
       try {
+        const navLink = `https://www.google.com/maps/dir/?api=1&destination=${parking.latitude},${parking.longitude}`;
         await Notification.create({
           userId: booking.userId,
           title: "Slot Allocated! 🚗",
-          message: `Your spot at ${parking.businessName} is ready. Please park in Slot #${allocatedSlot}.`,
+          message: `Your spot at ${parking.businessName} is ready (Slot #${allocatedSlot}). Tap to navigate!`,
           type: "Allocation"
         });
       } catch (noteErr) {
@@ -125,7 +126,8 @@ const allocateAndNotify = async (booking) => {
       // Send WhatsApp Notification (Twilio Sandbox)
       try {
         const { sendWhatsAppNotification } = require("./whatsappService");
-        const slotMsg = `🚗 *Smart Parking Update*\n\nYour parking slot has been assigned successfully.\n\nSlot Number: *${allocatedSlot}*\nFloor: *Ground Floor*\n\nPlease proceed to the parking area.`;
+        const navLink = `https://www.google.com/maps/dir/?api=1&destination=${parking.latitude},${parking.longitude}`;
+        const slotMsg = `🚗 *Smart Parking Update*\n\nYour parking slot has been assigned successfully.\n\nSlot Number: *${allocatedSlot}*\nFloor: *Ground Floor*\n\n📍 *Navigate to your spot:* ${navLink}`;
         await sendWhatsAppNotification(booking.user.phone, slotMsg);
       } catch (msgErr) {
         console.error("[WhatsApp Service] JIT Allocation notification failed:", msgErr.message);
