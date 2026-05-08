@@ -263,13 +263,19 @@ router.get("/dashboard/stats", async (req, res) => {
 
     const availableCount = Math.max(totalSlots - (occupiedCount + reservedCount), 0);
 
+    const overstayCount = activeBookings.filter(b => {
+      const endTime = new Date(b.endTime);
+      const gracePeriodMs = 15 * 60 * 1000;
+      return now.getTime() > endTime.getTime() + gracePeriodMs && b.overstayStatus !== "Paid";
+    }).length;
+
     return res.status(200).json({
       totalSlots,
       occupiedCount,
       availableCount,
       reservedCount,
       pendingCount,
-      overstayCount: 0,
+      overstayCount,
       revenue,
       zoneCount: 1, 
       activeBookings: activeBookings.length,
@@ -618,13 +624,26 @@ router.get("/bookings", async (req, res) => {
         hour12: true
       });
 
+      let status = "completed";
+      if (b.bookingStatus === "Checked-In") {
+        status = "active";
+        const now = new Date();
+        const endTime = new Date(b.endTime);
+        const gracePeriodMs = 15 * 60 * 1000;
+        if (now.getTime() > endTime.getTime() + gracePeriodMs && b.overstayStatus !== "Paid") {
+          status = "overstay";
+        }
+      } else if (b.bookingStatus === "Confirmed") {
+        status = "booked";
+      }
+
       return {
         id: b.id,
         user: b.userId,
         vehicle: b.vehicleNumber,
         time: b.startTime,
         formattedTime: formattedTime,
-        status: b.bookingStatus === "Checked-In" ? "active" : (b.bookingStatus === "Confirmed" ? "booked" : "completed"),
+        status: status,
         assignedSlotId: b.slotNumber ? `slot-${b.slotNumber}` : "Pending assignment",
         amount: b.totalAmount
       };
@@ -659,7 +678,7 @@ router.patch("/bookings/:id", async (req, res) => {
       let overstayAmount = 0;
       let overstayHours = 0;
 
-      if (now.getTime() > endTime.getTime() + gracePeriodMs) {
+      if (now.getTime() > endTime.getTime() + gracePeriodMs && booking.overstayStatus !== "Paid") {
         const overstayMs = now.getTime() - endTime.getTime();
         overstayHours = Math.ceil(overstayMs / (1000 * 60 * 60));
         
@@ -671,7 +690,8 @@ router.patch("/bookings/:id", async (req, res) => {
         booking.overstayStatus = "Pending";
       }
 
-      const totalToPay = (booking.paymentStatus === "Pending" ? Number(booking.totalAmount || 0) : 0) + overstayAmount;
+      const totalToPay = (booking.paymentStatus === "Pending" ? Number(booking.totalAmount || 0) : 0) + 
+                         (booking.overstayStatus === "Pending" ? Number(booking.overstayAmount || 0) : 0);
 
       if (totalToPay > 0 && !allowManualCompletion) {
         await booking.save();
@@ -680,7 +700,7 @@ router.patch("/bookings/:id", async (req, res) => {
           requiresOverstayPayment: true,
           overstayHours,
           amountToPay: totalToPay,
-          message: `Payment of Rs ${totalToPay.toFixed(2)} is required to complete this session.${overstayAmount > 0 ? ` (Includes Rs ${overstayAmount} overstay fee)` : ""}`
+          message: `Payment of Rs ${totalToPay.toFixed(2)} is required to complete this session.${booking.overstayAmount > 0 ? ` (Includes Rs ${booking.overstayAmount} overstay fee)` : ""}`
         });
       }
 
